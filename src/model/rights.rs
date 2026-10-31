@@ -12,12 +12,23 @@ use crate::model::Square;
 use crate::model::SquareList;
 use Square::*;
 
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct Rights {
     pub white_short: bool,
     pub white_long:  bool,
     pub black_short: bool,
     pub black_long:  bool,
+}
+
+impl Default for Rights {
+    fn default() -> Self {
+        Rights {
+            white_short: true,
+            white_long:  true,
+            black_short: true,
+            black_long:  true,
+        }
+    }
 }
 
 impl Rights {
@@ -76,15 +87,21 @@ impl Rights {
 mod tests {
     use super::*;
 
-    const ALL: Rights = Rights { white_short: true, white_long: true, black_short: true, black_long: true };
+    const ALL:  Rights = Rights { white_short: true,  white_long: true,  black_short: true,  black_long: true  };
+    const NONE: Rights = Rights { white_short: false, white_long: false, black_short: false, black_long: false };
+
+    #[test]
+    fn default_grants_all_rights() {
+        assert_eq!(Rights::default(), ALL);
+    }
 
     #[test]
     fn has_rights() {
         for (start, landing) in [(E1, G1), (E1, C1), (E8, G8), (E8, C8)] {
             assert!(ALL.has_rights(start, landing));
-            assert!(!Rights::default().has_rights(start, landing));
+            assert!(!NONE.has_rights(start, landing));
         }
-        let white_short = Rights { white_short: true, ..Default::default() };
+        let white_short = Rights { white_short: true, ..NONE };
         assert!(white_short.has_rights(E1, G1));
         assert!(!white_short.has_rights(E1, C1));
         assert!(!white_short.has_rights(E8, G8));

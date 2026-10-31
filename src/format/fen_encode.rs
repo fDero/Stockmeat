@@ -107,9 +107,12 @@ mod tests {
 
     #[test]
     fn encodes_rights() {
+        let none = Rights { white_short: false, white_long: false, black_short: false, black_long: false };
         for (rights, fen) in [
-            (Rights { white_long: true, ..Default::default() },   "Q"),
-            (Rights::default(), "-"),
+            (Rights { white_long: true, ..none },   "Q"),
+            (Rights { black_short: false, ..Default::default() },   "KQq"),
+            (Rights::default(), "KQkq"),
+            (none, "-"),
         ] {
             assert_eq!(rights.fen_encode(), fen);
         }

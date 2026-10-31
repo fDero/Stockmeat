@@ -4,9 +4,11 @@
 |               LICENSE: MIT (https://mit-license.org)                 |
 +---------------------------------------------------------------------*/
 
-use crate::model::{Board, Color, Move, Rights, Square};
+use crate::model::{Board, Color, Move, Rights, Square, Piece};
 use anyhow::{Context, Result};
 use anyhow::{bail, ensure};
+use Square::*;
+use Piece::*;
 
 #[derive(Copy, Clone, Debug)]
 pub struct Game {
@@ -16,4 +18,17 @@ pub struct Game {
     pub fullmove_counter: u16,
     pub current_turn: Color,
     pub board: Board,
+}
+
+impl Default for Game {
+    fn default() -> Self {
+        Game {
+            en_passant_square: None,
+            castling_rights: Rights::default(),
+            halfmove_counter: 0,
+            fullmove_counter: 1,
+            current_turn: Color::White,
+            board: Board::default(),
+        }
+    }
 }

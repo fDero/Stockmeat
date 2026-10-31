@@ -5,10 +5,9 @@
 +---------------------------------------------------------------------*/
 
 use getset::CopyGetters;
-use crate::model::Color;
-use crate::model::Piece;
-use crate::model::Square;
-use crate::model::Bitboard;
+use crate::model::{Color, Piece, Square, Bitboard};
+use Square::*;
+use Piece::*;
 
 #[derive(Copy, Clone, Debug, CopyGetters)]
 #[getset(get_copy = "pub")]
@@ -16,6 +15,22 @@ pub struct Board {
     pieces_layout:   [Option<Piece>; 64],
     piece_bitboards: [Bitboard; 12],
     color_bitboards: [Bitboard; 2],
+}
+
+impl Default for Board {
+    fn default() -> Self {
+        Board::from_pieces(&[
+            (A1, WRook), (B1, WBishop), (C1, WKnight), (D1, WQueen),
+            (H1, WRook), (G1, WBishop), (F1, WKnight), (E1, WKing),
+            (A2, WPawn), (B2, WPawn),   (C2, WPawn),   (D2, WPawn),
+            (H2, WPawn), (G2, WPawn),   (F2, WPawn),   (E2, WPawn),
+
+            (A8, BRook), (B8, BBishop), (C8, BKnight), (D8, BQueen),
+            (H8, BRook), (G8, BBishop), (F8, BKnight), (E8, BKing),
+            (A7, BPawn), (B7, BPawn),   (C7, BPawn),   (D7, BPawn),
+            (H7, BPawn), (G7, BPawn),   (F7, BPawn),   (E7, BPawn),
+        ])
+    }
 }
 
 impl Board {
