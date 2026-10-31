@@ -5,11 +5,20 @@
 +---------------------------------------------------------------------*/
 
 use crate::model::*;
-use crate::patterns::*;
+use getset::CopyGetters;
 use arrayvec::ArrayVec;
-
 use Piece::*;
-pub type MoveList<const N: usize> = ArrayVec<Move, N>;
+
+pub type MoveList<const N: usize> =
+    ArrayVec<Move, N>;
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq, CopyGetters)]
+#[getset(get_copy = "pub")]
+pub struct Move {
+    start: Square,
+    landing: Square,
+    promotion: Option<Piece>,
+}
 
 impl Move {
     pub fn from_squares(start: Square, landing: Square) -> Move {

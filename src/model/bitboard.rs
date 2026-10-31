@@ -5,7 +5,7 @@
 +---------------------------------------------------------------------*/
 
 use getset::CopyGetters;
-use konst::iter::{for_each};
+use konst::iter::for_each;
 use crate::model::Square;
 use Square::*;
 
@@ -24,9 +24,9 @@ impl Bitboard {
 
     pub const EDGES : Bitboard = Self::from_squares(&[
         A1, A2, A3, A4, A5, A6, A7, A8,
-        A1, B1, C1, D1, E1, F1, G1, H1,
-        H1, H2, H3, H4, H5, H6, H7, H8,
-        A8, B8, C8, D8, E8, F8, G8, H8,
+            B1, C1, D1, E1, F1, G1, H1,
+            H2, H3, H4, H5, H6, H7, H8,
+            B8, C8, D8, E8, F8, G8,
     ]);
 
     pub const fn from_bits(bits: u64) -> Bitboard {
@@ -66,7 +66,7 @@ impl Bitboard {
     }
 
     pub const fn diff(self, other: Bitboard) -> Bitboard {
-        Bitboard { bits : self.bits & !other.bits }
+        self.without(other)
     }
 
     pub const fn when(self, other: Bitboard) -> Bitboard {

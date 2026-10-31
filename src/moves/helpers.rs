@@ -6,12 +6,12 @@
 
 use crate::model::*;
 use crate::patterns::*;
-use crate::moves::MoveList;
+use crate::model::MoveList;
 
 use Piece::*;
 
 impl Game {
-    pub fn get_pawn_moves(self, _start: Square) -> MoveList<9> {
+    pub fn get_pawn_moves(self, _start: Square) -> MoveList<12> {
         todo!()
     }
 

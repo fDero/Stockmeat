@@ -6,7 +6,6 @@
 
 use crate::model::*;
 use crate::patterns::*;
-use crate::moves::MoveList;
 
 use Piece::*;
 
@@ -26,8 +25,8 @@ impl Game {
         moves.extend(self.get_knight_moves(start));
         moves.extend(self.get_rook_moves(start));
         moves.extend(self.get_bishop_moves(start));
-        moves.extend(self.get_king_moves(start));
         moves.extend(self.get_queen_moves(start));
+        moves.extend(self.get_king_moves(start));
         moves.extend(self.get_pawn_moves(start));
         moves
     }
@@ -100,8 +99,8 @@ mod tests {
     }
 
     fn landings(start: Square, moves: &[Move]) -> Bitboard {
-        assert!(moves.iter().all(|mv| mv.start == start && mv.promotion.is_none()));
-        let squares: Vec<Square> = moves.iter().map(|mv| mv.landing).collect();
+        assert!(moves.iter().all(|mv| mv.start() == start && mv.promotion().is_none()));
+        let squares: Vec<Square> = moves.iter().map(|mv| mv.landing()).collect();
         Bitboard::from_squares(&squares)
     }
 

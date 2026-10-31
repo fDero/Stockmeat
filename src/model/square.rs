@@ -4,6 +4,11 @@
 |               LICENSE: MIT (https://mit-license.org)                 |
 +---------------------------------------------------------------------*/
 
+use arrayvec::ArrayVec;
+
+pub type SquareList<const N: usize> =
+    ArrayVec<Square, N>;
+
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 #[repr(u8)]
 pub enum Square {
