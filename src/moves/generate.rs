@@ -149,7 +149,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "pawn and king moves are still todo!()"]
     fn starting_position() {
         let start = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
         assert_eq!(Game::fen_decode(start).unwrap().get_legal_moves().len(), 20);

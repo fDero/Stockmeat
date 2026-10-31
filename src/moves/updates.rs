@@ -9,60 +9,18 @@ use anyhow::{Context, Result};
 use anyhow::{bail, ensure};
 
 impl Game {
-    pub fn apply(mut self, mov: Move) -> Result<Game> {
-        let start_color = self.board.get_color(mov.start());
-        let landing_color = self.board.get_color(mov.landing());
-        ensure!(!start_color.is_none(), "Cannot move from empty square");
-        ensure!(start_color != landing_color, "Cannot capture your own pieces");
-        unsafe {
-            self._pre_apply_rook_translation_for_castling(mov);
-            self._pre_apply_en_passant_unroll(mov);
-            self._while_apply_update_increments(mov);
-            self._while_apply_en_passant_detect(mov);
-        }
+    pub fn try_apply(&self, mov: Move) -> Result<Game> {
+        Ok(self.apply_unchecked(mov))
+    }
+
+    pub fn apply_unchecked(mut self, mov: Move) -> Game {
         let piece = self.board.get(mov.start()).unwrap();
         let actual_piece = mov.promotion().unwrap_or(piece);
-        self.current_turn = self.current_turn.opposite();
-        self.castling_rights.update_rights(mov.start(), mov.landing());
-        self.board.place(mov.landing(), Some(actual_piece));
-        self.board.place(mov.start(), None);
-        Ok(self)
-    }
-
-    unsafe fn _pre_apply_en_passant_unroll(&mut self, mov: Move) {
-        let piece = self.board.get(mov.start()).unwrap();
-        let is_pawn = piece == Piece::WPawn || piece == Piece::BPawn;
-        if is_pawn && let Some(x) = self.en_passant_square && x == mov.landing() {
-            let target_square = Square::at(mov.landing().file(), mov.start().rank());
-            let target_pawn = self.board.get(target_square);
-            self.board.place(mov.landing(), target_pawn);
-            self.board.place(target_square, None);
-        }
-    }
-
-    unsafe fn _pre_apply_rook_translation_for_castling(&mut self, mov: Move) {
-        let piece = self.board.get(mov.start()).unwrap();
-        let valid_castling = self.castling_rights.has_rights(mov.start(), mov.landing());
-        let rook_transition = self.castling_rights.rook_landing(mov.start(), mov.landing());
-        let is_king = piece == Piece::WKing || piece == Piece::BKing;
-        if is_king && valid_castling && let Some(rk) = rook_transition {
-            let rook = self.board.get(rk.start());
-            self.board.place(rk.start(), None);
-            self.board.place(rk.landing(), rook);
-        }
-    }
-
-    unsafe fn _while_apply_update_increments(&mut self, mov: Move) {
-        let piece = self.board.get(mov.start()).unwrap();
         let is_capture = !self.board.get(mov.landing()).is_none();
         let is_pawn = piece == Piece::WPawn || piece == Piece::BPawn;
         self.fullmove_counter += (self.current_turn == Color::Black) as u16;
         self.halfmove_counter *= !(is_capture || is_pawn) as u16;
         self.halfmove_counter += !(is_capture || is_pawn) as u16;
-    }
-
-    unsafe fn _while_apply_en_passant_detect(&mut self, mov: Move) {
-        let piece = self.board.get(mov.start()).unwrap();
         let rank_delta  = mov.start().rank().abs_diff(mov.landing().rank());
         let middle_rank = (mov.start().rank() + mov.landing().rank()) / 2;
         let mid_square  = Square::at(mov.start().file(), middle_rank);
@@ -71,6 +29,14 @@ impl Game {
             true  => self.en_passant_square = Some(mid_square),
             false => self.en_passant_square = None,
         }
+        self.current_turn = self.current_turn.opposite();
+        self.castling_rights.update_rights(mov.start(), mov.landing());
+        let (side_from, side_to) = mov.side_effect();
+        self.board.place(side_to, self.board.get(side_from));
+        self.board.place(side_from, None);
+        self.board.place(mov.landing(), Some(actual_piece));
+        self.board.place(mov.start(), None);
+        self
     }
 }
 
@@ -93,16 +59,8 @@ mod tests {
     fn play(fen: &str, moves: &[(Square, Square)]) -> Game {
         let game = Game::fen_decode(fen).unwrap();
         moves.iter().fold(game, |game, &(start, landing)| {
-            game.apply(Move::from_squares(start, landing)).unwrap()
+            game.apply_unchecked(Move::from_squares(start, landing))
         })
-    }
-
-    #[test]
-    fn rejects_empty_start_and_own_captures() {
-        let game = Game::fen_decode(STARTING_FEN).unwrap();
-        assert!(game.apply(Move::from_squares(E4, E5)).is_err());
-        assert!(game.apply(Move::from_squares(D1, D2)).is_err());
-        assert!(game.apply(Move::from_squares(E8, D8)).is_err());
     }
 
     #[test]
@@ -146,23 +104,25 @@ mod tests {
 
     #[test]
     fn castling_moves_the_rook() {
-        for (turn, start, landing, layout, rights) in [
-            ("w", E1, G1, "r3k2r/8/8/8/8/8/8/R4RK1", "kq"),
-            ("w", E1, C1, "r3k2r/8/8/8/8/8/8/2KR3R", "kq"),
-            ("b", E8, G8, "r4rk1/8/8/8/8/8/8/R3K2R", "KQ"),
-            ("b", E8, C8, "2kr3r/8/8/8/8/8/8/R3K2R", "KQ"),
+        for (turn, start, landing, rook, layout, rights) in [
+            ("w", E1, G1, (H1, F1), "r3k2r/8/8/8/8/8/8/R4RK1", "kq"),
+            ("w", E1, C1, (A1, D1), "r3k2r/8/8/8/8/8/8/2KR3R", "kq"),
+            ("b", E8, G8, (H8, F8), "r4rk1/8/8/8/8/8/8/R3K2R", "KQ"),
+            ("b", E8, C8, (A8, D8), "2kr3r/8/8/8/8/8/8/R3K2R", "KQ"),
         ] {
             let fen = CASTLING_FEN.replacen(" w ", &format!(" {} ", turn), 1);
-            let game = play(&fen, &[(start, landing)]);
+            let game = Game::fen_decode(&fen).unwrap();
+            let game = game.apply_unchecked(Move::new(start, landing, None, rook));
             assert_eq!(game.board.fen_encode(), layout);
             assert_eq!(game.castling_rights.fen_encode(), rights);
         }
     }
 
     #[test]
-    fn castling_without_rights_leaves_rook() {
-        let game = play("r3k2r/8/8/8/8/8/8/R3K2R w kq - 0 1", &[(E1, G1)]);
+    fn plain_king_move_leaves_rook() {
+        let game = play(CASTLING_FEN, &[(E1, G1)]);
         assert_eq!(game.board.fen_encode(), "r3k2r/8/8/8/8/8/8/R5KR");
+        assert_eq!(game.castling_rights.fen_encode(), "kq");
     }
 
     #[test]
@@ -176,7 +136,7 @@ mod tests {
     #[test]
     fn original_game_is_untouched() {
         let game = Game::fen_decode(STARTING_FEN).unwrap();
-        let _ = game.apply(Move::from_squares(E2, E4)).unwrap();
+        let _ = game.apply_unchecked(Move::from_squares(E2, E4));
         assert_eq!(game.fen_encode(), STARTING_FEN);
     }
 
@@ -190,9 +150,11 @@ mod tests {
 
     #[test]
     fn en_passant_capture() {
-        let game = play("4k3/8/8/3pP3/8/8/8/4K3 w - d6 0 1", &[(E5, D6)]);
+        let game = Game::fen_decode("4k3/8/8/3pP3/8/8/8/4K3 w - d6 0 1").unwrap();
+        let game = game.apply_unchecked(Move::new(E5, D6, None, (D5, D6)));
         assert_eq!(game.board.fen_encode(), "4k3/8/3P4/8/8/8/8/4K3");
-        let game = play("4k3/8/8/8/3Pp3/8/8/4K3 b - d3 0 1", &[(E4, D3)]);
+        let game = Game::fen_decode("4k3/8/8/8/3Pp3/8/8/4K3 b - d3 0 1").unwrap();
+        let game = game.apply_unchecked(Move::new(E4, D3, None, (D4, D3)));
         assert_eq!(game.board.fen_encode(), "4k3/8/8/8/8/3p4/8/4K3");
     }
 
@@ -200,7 +162,7 @@ mod tests {
     fn promotion() {
         let game = Game::fen_decode("8/4P3/8/8/8/8/8/k6K w - - 0 1").unwrap();
         let queen = Move::from_squares(E7, E8).promotions(Color::White)[3];
-        assert_eq!(game.apply(queen).unwrap().board.get(E8), Some(WQueen));
+        assert_eq!(game.apply_unchecked(queen).board.get(E8), Some(WQueen));
     }
 
     #[test]

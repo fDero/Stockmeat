@@ -20,13 +20,13 @@ pub struct Board {
 impl Default for Board {
     fn default() -> Self {
         Board::from_pieces(&[
-            (A1, WRook), (B1, WBishop), (C1, WKnight), (D1, WQueen),
-            (H1, WRook), (G1, WBishop), (F1, WKnight), (E1, WKing),
+            (A1, WRook), (B1, WKnight), (C1, WBishop), (D1, WQueen),
+            (H1, WRook), (G1, WKnight), (F1, WBishop), (E1, WKing),
             (A2, WPawn), (B2, WPawn),   (C2, WPawn),   (D2, WPawn),
             (H2, WPawn), (G2, WPawn),   (F2, WPawn),   (E2, WPawn),
 
-            (A8, BRook), (B8, BBishop), (C8, BKnight), (D8, BQueen),
-            (H8, BRook), (G8, BBishop), (F8, BKnight), (E8, BKing),
+            (A8, BRook), (B8, BKnight), (C8, BBishop), (D8, BQueen),
+            (H8, BRook), (G8, BKnight), (F8, BBishop), (E8, BKing),
             (A7, BPawn), (B7, BPawn),   (C7, BPawn),   (D7, BPawn),
             (H7, BPawn), (G7, BPawn),   (F7, BPawn),   (E7, BPawn),
         ])

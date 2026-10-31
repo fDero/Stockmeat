@@ -15,14 +15,19 @@ pub type MoveList<const N: usize> =
 #[derive(Copy, Clone, Debug, PartialEq, Eq, CopyGetters)]
 #[getset(get_copy = "pub")]
 pub struct Move {
-    start: Square,
-    landing: Square,
+    side_effect: (Square, Square),
     promotion: Option<Piece>,
+    landing: Square,
+    start: Square,
 }
 
 impl Move {
+    pub fn new(start: Square, landing: Square, promotion: Option<Piece>, side_effect: (Square, Square)) -> Move {
+        Self { start, landing, side_effect, promotion }
+    }
+
     pub fn from_squares(start: Square, landing: Square) -> Move {
-        Self { start, landing, promotion: None }
+        Self { start, landing, side_effect: (start, landing), promotion: None }
     }
 
     pub fn from_mask<const N: usize>(start: Square, mask: Bitboard) -> MoveList<N> {
@@ -62,9 +67,20 @@ mod tests {
     use Square::*;
 
     #[test]
+    fn new() {
+        let castle = Move::new(E1, G1, None, (H1, F1));
+        assert_eq!((castle.start, castle.landing, castle.promotion), (E1, G1, None));
+        assert_eq!(castle.side_effect, (H1, F1));
+        let promo = Move::new(B7, A8, Some(WQueen), (B7, A8));
+        assert_eq!(promo.promotion, Some(WQueen));
+        assert_eq!(Move::new(E2, E4, None, (E2, E4)), Move::from_squares(E2, E4));
+    }
+
+    #[test]
     fn from_squares() {
         let mv = Move::from_squares(E2, E4);
         assert_eq!((mv.start, mv.landing, mv.promotion), (E2, E4, None));
+        assert_eq!(mv.side_effect, (E2, E4));
     }
 
     #[test]

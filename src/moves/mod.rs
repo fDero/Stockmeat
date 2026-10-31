@@ -7,5 +7,7 @@
 mod threats;
 mod masks;
 mod generate;
-mod helpers;
+mod pawns;
+mod kings;
 mod updates;
+mod castling;
