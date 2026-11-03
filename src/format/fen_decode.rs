@@ -6,8 +6,8 @@
 
 use anyhow::{bail, ensure};
 use anyhow::{Context, Result};
+use crate::format::fmt_regexes::*;
 use crate::model::*;
-use regex::Regex;
 
 pub trait FenDecode: Sized {
     fn fen_decode(input: &str) -> Result<Self>;
@@ -74,8 +74,7 @@ impl FenDecode for Color {
 
 impl FenDecode for Rights {
     fn fen_decode(input: &str) -> Result<Self> {
-        ensure!(!input.is_empty(), "castling rights must not be empty");
-        ensure!(Regex::new(r"^(-|K?Q?k?q?)$")?.is_match(input), "invalid castling rights '{}'", input);
+        ensure!(FEN_CASTLING_RGX.is_match(input), "invalid castling rights '{}'", input);
         Ok(Rights {
             white_short: input.contains("K"),
             white_long:  input.contains("Q"),

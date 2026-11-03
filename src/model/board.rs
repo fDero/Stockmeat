@@ -9,7 +9,7 @@ use crate::model::{Color, Piece, Square, Bitboard};
 use Square::*;
 use Piece::*;
 
-#[derive(Copy, Clone, Debug, CopyGetters)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, CopyGetters)]
 #[getset(get_copy = "pub")]
 pub struct Board {
     pieces_layout:   [Option<Piece>; 64],

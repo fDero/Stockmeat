@@ -10,7 +10,7 @@ use anyhow::{bail, ensure};
 use Square::*;
 use Piece::*;
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct Game {
     pub en_passant_square: Option<Square>,
     pub castling_rights: Rights,

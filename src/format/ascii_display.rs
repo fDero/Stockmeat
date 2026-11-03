@@ -4,7 +4,7 @@
 |               LICENSE: MIT (https://mit-license.org)                 |
 +---------------------------------------------------------------------*/
 
-use crate::{format::FenEncode, model::{Game, Piece, Square}};
+use crate::{format::FenEncode, model::{Game, Move, Piece, Square}};
 use std::fmt::{Display, Formatter, Result};
 use Square::*;
 use Piece::*;
@@ -17,12 +17,12 @@ const FOOTER : &str = "└───┴───┴───┴───┴──
 impl Display for Piece {
     fn fmt(&self, formatter: &mut Formatter<'_>) -> Result {
         match self {
-            WKing   => write!(formatter, "K"), BKing => write!(formatter, "k"),
-            WQueen  => write!(formatter, "Q"), BQueen => write!(formatter, "q"),
-            WRook   => write!(formatter, "R"), BRook => write!(formatter, "r"),
+            WKing   => write!(formatter, "K"), BKing   => write!(formatter, "k"),
+            WQueen  => write!(formatter, "Q"), BQueen  => write!(formatter, "q"),
+            WRook   => write!(formatter, "R"), BRook   => write!(formatter, "r"),
             WBishop => write!(formatter, "B"), BBishop => write!(formatter, "b"),
             WKnight => write!(formatter, "N"), BKnight => write!(formatter, "n"),
-            WPawn   => write!(formatter, "P"), BPawn => write!(formatter, "p"),
+            WPawn   => write!(formatter, "P"), BPawn   => write!(formatter, "p"),
         }
     }
 }
@@ -48,6 +48,26 @@ impl Display for Game {
     }
 }
 
+impl Display for Square {
+    fn fmt(&self, formatter: &mut Formatter<'_>) -> Result {
+        let file = char::from(b'a' + self.file());
+        let rank = char::from(b'1' + self.rank());
+        write!(formatter, "{}{}", file, rank)
+    }
+}
+
+impl Display for Move {
+    fn fmt(&self, formatter: &mut Formatter<'_>) -> Result {
+        write!(formatter, "{}{}", self.start(), self.landing())?;
+        match self.promotion() {
+            None => Ok(()),
+            Some(piece) => write!(formatter, "{}",
+                piece.to_string().to_ascii_lowercase()
+            ),
+        }
+    }
+}
+
 /*---------------------------------------------------------------------+
 |  =========================== UNIT-TESTS ============================ |
 |     Author: fDero (francescodero@outlook.it - github.com/fDero)      |
@@ -69,5 +89,22 @@ mod tests {
         assert_eq!(lines[2], SPACER.trim_end());
         assert_eq!(lines[16], FOOTER.trim_end());
         assert_eq!(lines[18], game.fen_encode());
+    }
+
+    #[test]
+    fn square_display() {
+        assert_eq!(A1.to_string(), "a1");
+        assert_eq!(H8.to_string(), "h8");
+        assert_eq!(E4.to_string(), "e4");
+        assert_eq!(C7.to_string(), "c7");
+    }
+
+    #[test]
+    fn move_display() {
+        assert_eq!(Move::from_squares(E2, E4).to_string(), "e2e4");
+        assert_eq!(Move::new(E1, G1, None, (H1, F1)).to_string(), "e1g1");
+        assert_eq!(Move::new(E5, D6, None, (D6, D5)).to_string(), "e5d6");
+        assert_eq!(Move::new(E7, E8, Some(WQueen), (E7, E8)).to_string(), "e7e8q");
+        assert_eq!(Move::new(B2, A1, Some(BKnight), (B2, A1)).to_string(), "b2a1n");
     }
 }
