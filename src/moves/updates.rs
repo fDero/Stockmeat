@@ -10,12 +10,14 @@ use anyhow::{bail, ensure};
 
 impl Game {
     pub fn try_apply(&self, mov: Move) -> Result<Game> {
+        let legal_moves = self.get_legal_moves();
+        let target = legal_moves.into_iter().find(|m2| *m2 == mov);
+        ensure!(target.is_some(), "Inavlid move for try_apply");
         Ok(self.apply_unchecked(mov))
     }
 
     pub fn apply_unchecked(mut self, mov: Move) -> Game {
         let piece = self.board.get(mov.start()).unwrap();
-        let actual_piece = mov.promotion().unwrap_or(piece);
         let is_capture = !self.board.get(mov.landing()).is_none();
         let is_pawn = piece == Piece::WPawn || piece == Piece::BPawn;
         self.fullmove_counter += (self.current_turn == Color::Black) as u16;
@@ -31,11 +33,7 @@ impl Game {
         }
         self.current_turn = self.current_turn.opposite();
         self.castling_rights.update_rights(mov.start(), mov.landing());
-        let (side_from, side_to) = mov.side_effect();
-        self.board.place(side_to, self.board.get(side_from));
-        self.board.place(side_from, None);
-        self.board.place(mov.landing(), Some(actual_piece));
-        self.board.place(mov.start(), None);
+        self.board.update_board(mov);
         self
     }
 }

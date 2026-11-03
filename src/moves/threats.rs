@@ -4,10 +4,29 @@
 |               LICENSE: MIT (https://mit-license.org)                 |
 +---------------------------------------------------------------------*/
 
-use crate::model::{Bitboard, Board, Color, Game, Piece, Square};
+use crate::model::{Bitboard, Board, Color, Game, Piece, Square, Move};
 use crate::patterns::*;
 
 impl Board {
+    pub fn is_piece_pinned(self, mov: Move) -> bool {
+        let (start, landing) = (mov.start(), mov.landing());
+        let (correct_king, opponent) = match self.get_color(start) {
+            Some(Color::White) => (Piece::WKing, Color::Black),
+            Some(Color::Black) => (Piece::BKing, Color::White),
+            _ => return false,
+        };
+        let bitboard = self.piece_bitboards()[correct_king as usize];
+        let king_index = bitboard.bits().trailing_zeros() as u8;
+        let king_square = match self.get(start) {
+            Some(Piece::WKing) => landing,
+            Some(Piece::BKing) => landing,
+            _ => Square::from_index(king_index),
+        };
+        let mut after_move = self.clone();
+        after_move.update_board(mov);
+        after_move.is_square_attacked_by(king_square, opponent)
+    }
+
     pub fn is_square_attacked_by(self, square: Square, by: Color) -> bool {
         self.is_square_attacked_by_knights(square, by) ||
         self.is_square_attacked_by_rooks(square, by)   ||
@@ -112,5 +131,43 @@ mod tests {
         assert!(!board.is_square_attacked_by(E6, Black));
         assert!(board.is_square_attacked_by(G7, White));
         assert!(!board.is_square_attacked_by(F6, White));
+    }
+
+    /// Legal moves of the side to move, as sorted UCI strings.
+    fn legal_moves(fen: &str) -> Vec<String> {
+        use crate::format::FenDecode;
+        let game = Game::fen_decode(fen).unwrap();
+        let mut moves: Vec<String> = game.get_legal_moves().iter().map(|mv| mv.to_string()).collect();
+        moves.sort();
+        moves
+    }
+
+    #[test]
+    fn pinned_piece_moves_along_the_pin() {
+        let moves = legal_moves("4r2k/8/8/8/8/8/4R3/4K3 w - - 0 1");
+        assert_eq!(moves, ["e1d1", "e1d2", "e1f1", "e1f2", "e2e3", "e2e4", "e2e5", "e2e6", "e2e7", "e2e8"]);
+    }
+
+    #[test]
+    fn check_must_be_blocked_or_escaped() {
+        let moves = legal_moves("4r2k/8/8/8/8/8/R7/4K3 w - - 0 1");
+        assert_eq!(moves, ["a2e2", "e1d1", "e1d2", "e1f1", "e1f2"]);
+    }
+
+    #[test]
+    fn king_avoids_attacked_and_defended_squares() {
+        let moves = legal_moves("3r3k/8/8/8/8/8/5p2/4K3 w - - 0 1");
+        assert_eq!(moves, ["e1e2", "e1f1", "e1f2"]);
+        let moves = legal_moves("3r3k/8/8/8/8/6b1/5p2/4K3 w - - 0 1");
+        assert_eq!(moves, ["e1e2", "e1f1"]);
+    }
+
+    #[test]
+    fn en_passant_discovering_check_is_illegal() {
+        let moves = legal_moves("7k/8/8/K2pP2r/8/8/8/8 w - d6 0 1");
+        assert!(!moves.contains(&"e5d6".to_string()));
+        assert!(moves.contains(&"e5e6".to_string()));
+        let moves = legal_moves("7k/8/8/3pP3/8/8/8/K7 w - d6 0 1");
+        assert!(moves.contains(&"e5d6".to_string()));
     }
 }

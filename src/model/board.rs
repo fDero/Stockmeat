@@ -5,7 +5,7 @@
 +---------------------------------------------------------------------*/
 
 use getset::CopyGetters;
-use crate::model::{Color, Piece, Square, Bitboard};
+use crate::model::{Bitboard, Color, Move, Piece, Square};
 use Square::*;
 use Piece::*;
 
@@ -79,6 +79,16 @@ impl Board {
         let white = self.color_bitboards[Color::White as usize];
         let black = self.color_bitboards[Color::Black as usize];
         white.merge(black)
+    }
+
+    pub fn update_board(&mut self, mov: Move) {
+        let (side_from, side_to) = mov.side_effect();
+        let piece = self.get(mov.start());
+        let actual_piece = mov.promotion().or(piece);
+        self.place(side_to, self.get(side_from));
+        self.place(side_from, None);
+        self.place(mov.landing(), actual_piece);
+        self.place(mov.start(), None);
     }
 }
 

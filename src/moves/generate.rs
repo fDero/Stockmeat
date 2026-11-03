@@ -13,11 +13,11 @@ impl Game {
     pub fn get_legal_moves(self) -> MoveList<256> {
         let current = Some(self.current_turn);
         (0..64).map(|index| Square::from_index(index))
-        .filter(|s: &Square| { self.board.get_color(*s) == current})
+        .filter(|s: &Square| self.board.get_color(*s) == current)
         .map(|start| self.get_moves_from(start))
-        .fold(MoveList::default(), |mut acc, x| {
-            acc.extend(x); acc
-        })
+        .fold(MoveList::<256>::default(), |mut acc, x| { acc.extend(x); acc })
+        .into_iter().filter(|mov| !self.board.is_piece_pinned(*mov))
+        .collect()
     }
 
     fn get_moves_from(self, start: Square) -> MoveList<27> {
