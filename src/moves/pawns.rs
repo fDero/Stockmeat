@@ -6,10 +6,8 @@
 
 use crate::model::*;
 use crate::patterns::*;
-use crate::model::MoveList;
 
 use Piece::*;
-use Square::*;
 
 impl Game {
     pub fn get_pawn_moves(self, start: Square) -> MoveList<12> {
@@ -44,7 +42,8 @@ impl Game {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::format::FenDecode;
+    use crate::format::{FenDecode, STARTING_FEN};
+    use Square::*;
 
     const CASTLING_FEN: &str = "r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1";
 
@@ -61,12 +60,11 @@ mod tests {
 
     #[test]
     fn pawn_single_and_double_push() {
-        let start = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-        let white = pawn_moves(start, E2);
+        let white = pawn_moves(STARTING_FEN, E2);
         assert_eq!(white.len(), 2);
         assert_eq!(landings(&white), Bitboard::from_squares(&[E3, E4]));
         assert!(white.iter().all(|mv| mv.promotion().is_none() && mv.side_effect() == (E2, mv.landing())));
-        let black = pawn_moves(start, D7);
+        let black = pawn_moves(STARTING_FEN, D7);
         assert_eq!(landings(&black), Bitboard::from_squares(&[D6, D5]));
         assert_eq!(pawn_moves("4k3/8/8/8/4P3/8/8/4K3 w - - 0 1", E4), vec![Move::from_squares(E4, E5)]);
     }
@@ -155,10 +153,9 @@ mod tests {
 
     #[test]
     fn pawn_moves_from_non_pawn_square() {
-        let start = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-        assert!(pawn_moves(start, E1).is_empty());
-        assert!(pawn_moves(start, G1).is_empty());
-        assert!(pawn_moves(start, E4).is_empty());
+        assert!(pawn_moves(STARTING_FEN, E1).is_empty());
+        assert!(pawn_moves(STARTING_FEN, G1).is_empty());
+        assert!(pawn_moves(STARTING_FEN, E4).is_empty());
         assert!(pawn_moves(CASTLING_FEN, E1).is_empty());
     }
 }

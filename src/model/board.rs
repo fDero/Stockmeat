@@ -34,6 +34,11 @@ impl Default for Board {
 }
 
 impl Board {
+    pub fn king_square(self, color: Color) -> Option<Square> {
+        let bits = self.get_king_mask(color).bits();
+        (bits != 0).then(|| Square::from_index(bits.trailing_zeros() as u8))
+    }
+
     pub fn from_pieces(pieces: &[(Square, Piece)]) -> Board {
         let mut layout = [None; 64];
         for (square, piece) in pieces {
@@ -101,8 +106,6 @@ impl Board {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use Square::*;
-    use Piece::*;
 
     #[test]
     fn place_and_get() {

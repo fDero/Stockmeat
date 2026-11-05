@@ -5,14 +5,13 @@
 +---------------------------------------------------------------------*/
 
 use crate::model::*;
-use anyhow::{Context, Result};
-use anyhow::{bail, ensure};
+use anyhow::{ensure, Result};
 
 impl Game {
     pub fn try_apply(&self, mov: Move) -> Result<Game> {
         let legal_moves = self.get_legal_moves();
         let target = legal_moves.into_iter().find(|m2| *m2 == mov);
-        ensure!(target.is_some(), "Inavlid move for try_apply");
+        ensure!(target.is_some(), "Invalid move for try_apply");
         Ok(self.apply_unchecked(mov))
     }
 
@@ -26,7 +25,6 @@ impl Game {
         let rank_delta  = mov.start().rank().abs_diff(mov.landing().rank());
         let middle_rank = (mov.start().rank() + mov.landing().rank()) / 2;
         let mid_square  = Square::at(mov.start().file(), middle_rank);
-        let is_pawn = piece == Piece::WPawn || piece == Piece::BPawn;
         match is_pawn && (rank_delta == 2) {
             true  => self.en_passant_square = Some(mid_square),
             false => self.en_passant_square = None,
@@ -47,11 +45,10 @@ impl Game {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::format::{FenDecode, FenEncode};
+    use crate::format::{FenDecode, FenEncode, STARTING_FEN};
     use Square::*;
     use Piece::*;
 
-    const STARTING_FEN: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
     const CASTLING_FEN: &str = "r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1";
 
     fn play(fen: &str, moves: &[(Square, Square)]) -> Game {

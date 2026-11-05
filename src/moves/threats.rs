@@ -4,27 +4,29 @@
 |               LICENSE: MIT (https://mit-license.org)                 |
 +---------------------------------------------------------------------*/
 
-use crate::model::{Bitboard, Board, Color, Game, Piece, Square, Move};
+use crate::model::{Bitboard, Board, Color, Piece, Square, Move};
 use crate::patterns::*;
 
 impl Board {
+    pub fn is_in_check(self, color: Color) -> bool {
+        self.king_square(color)
+            .is_some_and(|king| self.is_square_attacked_by(king, color.opposite()))
+    }
+
     pub fn is_piece_pinned(self, mov: Move) -> bool {
-        let (start, landing) = (mov.start(), mov.landing());
-        let (correct_king, opponent) = match self.get_color(start) {
-            Some(Color::White) => (Piece::WKing, Color::Black),
-            Some(Color::Black) => (Piece::BKing, Color::White),
-            _ => return false,
+        let Some(color) = self.get_color(mov.start()) else {
+            return false;
         };
-        let bitboard = self.piece_bitboards()[correct_king as usize];
-        let king_index = bitboard.bits().trailing_zeros() as u8;
-        let king_square = match self.get(start) {
-            Some(Piece::WKing) => landing,
-            Some(Piece::BKing) => landing,
-            _ => Square::from_index(king_index),
+        let king_square = match self.get(mov.start()) {
+            Some(Piece::WKing | Piece::BKing) => Some(mov.landing()),
+            _ => self.king_square(color),
         };
-        let mut after_move = self.clone();
+        let Some(king_square) = king_square else {
+            return false;
+        };
+        let mut after_move = self;
         after_move.update_board(mov);
-        after_move.is_square_attacked_by(king_square, opponent)
+        after_move.is_square_attacked_by(king_square, color.opposite())
     }
 
     pub fn is_square_attacked_by(self, square: Square, by: Color) -> bool {
@@ -84,7 +86,9 @@ impl Board {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::model::Game;
+
+use super::*;
     use Square::*;
     use Piece::*;
     use Color::*;
@@ -133,11 +137,26 @@ mod tests {
         assert!(!board.is_square_attacked_by(F6, White));
     }
 
-    /// Legal moves of the side to move, as sorted UCI strings.
+    #[test]
+    fn king_square_and_check() {
+        let board = Board::from_pieces(&[(E1, WKing), (E8, BRook)]);
+        assert_eq!(board.king_square(White), Some(E1));
+        assert_eq!(board.king_square(Black), None);
+        assert!(board.is_in_check(White));
+        assert!(!board.is_in_check(Black));
+    }
+
+    #[test]
+    fn kingless_board_has_no_pins() {
+        let board = Board::from_pieces(&[(D4, WRook), (D8, BRook)]);
+        assert!(!board.is_piece_pinned(Move::from_squares(D4, A4)));
+    }
+
     fn legal_moves(fen: &str) -> Vec<String> {
         use crate::format::FenDecode;
         let game = Game::fen_decode(fen).unwrap();
-        let mut moves: Vec<String> = game.get_legal_moves().iter().map(|mv| mv.to_string()).collect();
+        let mut moves: Vec<String> = game.get_legal_moves().iter()
+            .map(|mv| mv.to_string()).collect();
         moves.sort();
         moves
     }

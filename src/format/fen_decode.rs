@@ -19,14 +19,16 @@ impl FenDecode for Game {
         let &[layout, turn, rights, en_passant, halfmove, fullmove] = fields.as_slice() else {
             bail!("FEN must have 6 fields, found {}", fields.len());
         };
-        Ok(Game {
+        let game = Game {
             board: Board::fen_decode(layout)?,
             current_turn: Color::fen_decode(turn)?,
             castling_rights: Rights::fen_decode(rights)?,
             en_passant_square: Option::<Square>::fen_decode(en_passant)?,
             halfmove_counter: halfmove.parse().context("invalid FEN counters")?,
             fullmove_counter: fullmove.parse().context("invalid FEN counters")?,
-        })
+        };
+        game.validate_game()?;
+        Ok(game)
     }
 }
 

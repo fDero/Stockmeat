@@ -26,10 +26,9 @@ pub struct SearchSettings {
     pub btime: Option<Duration>,
     pub winc: Option<Duration>,
     pub binc: Option<Duration>,
-    pub movestogo: Option<u32>,
-    pub depth: Option<u32>,
+    pub movestogo: Option<u64>,
+    pub depth: Option<u64>,
     pub nodes: Option<u64>,
-    pub mate: Option<u32>,
     pub movetime: Option<Duration>,
     pub infinite: bool,
 }
@@ -86,21 +85,20 @@ impl UciDecode for SearchSettings {
             };
             let value_or_zero = param.name("value").map_or("0", |v| v.as_str());
             let number: i64 = value_or_zero.parse().context(error_msg)?;
-            let millis = Some(Duration::from_millis(number.max(0) as u64));
-            let count = || u32::try_from(number).context(error_msg);
+            let millis = Duration::from_millis(number.max(0) as u64);
+            let count = || u64::try_from(number).context(error_msg);
             match struct_field_name.as_str() {
-                "ponder"    => settings.ponder = true,
-                "infinite"  => settings.infinite = true,
-                "wtime"     => settings.wtime = millis,
-                "btime"     => settings.btime = millis,
-                "winc"      => settings.winc = millis,
-                "binc"      => settings.binc = millis,
-                "movetime"  => settings.movetime = millis,
+                "ponder"    => settings.ponder    = true,
+                "infinite"  => settings.infinite  = true,
+                "wtime"     => settings.wtime     = Some(millis),
+                "btime"     => settings.btime     = Some(millis),
+                "winc"      => settings.winc      = Some(millis),
+                "binc"      => settings.binc      = Some(millis),
+                "movetime"  => settings.movetime  = Some(millis),
                 "movestogo" => settings.movestogo = Some(count()?),
-                "depth"     => settings.depth = Some(count()?),
-                "mate"      => settings.mate = Some(count()?),
-                "nodes"     => settings.nodes = Some(u64::try_from(number).context(error_msg)?),
-                _ => unreachable!("regex only matches known keys and flags"),
+                "depth"     => settings.depth     = Some(count()?),
+                "nodes"     => settings.nodes     = Some(count()?),
+                _           => {},
             }
         }
         Ok(UciIncoming::Go(settings))
@@ -146,9 +144,14 @@ mod tests {
         let settings = go("go   depth 7 nodes 100000 \t mate 3 movetime 250 ponder infinite");
         assert_eq!(settings.depth, Some(7));
         assert_eq!(settings.nodes, Some(100000));
-        assert_eq!(settings.mate, Some(3));
         assert_eq!(settings.movetime, Some(Duration::from_millis(250)));
         assert!(settings.ponder && settings.infinite);
+    }
+
+    #[test]
+    fn go_mate_is_accepted_but_ignored() {
+        let settings = go("go mate 3 depth 5");
+        assert_eq!(settings, SearchSettings { depth: Some(5), ..Default::default() });
     }
 
     #[test]
@@ -161,6 +164,21 @@ mod tests {
         let settings = go("go searchmoves e2e4 d2d4 e7e8q depth 3");
         assert!(settings.searchmoves.is_empty());
         assert_eq!(settings.depth, Some(3));
+    }
+
+    #[test]
+    fn position_rejects_illegal_fen() {
+        assert!(UciIncoming::uci_decode("position fen 8/8/8/8/8/8/8/8 w - - 0 1").is_err());
+        assert!(UciIncoming::uci_decode("position fen 4k3/8/8/8/8/8/8/8 w - - 0 1 moves e8e7").is_err());
+    }
+
+    #[test]
+    fn position_with_moves_reaches_checkmate() {
+        let cmd = "position startpos moves f2f3 e7e5 g2g4 d8h4";
+        let UciIncoming::Position(game) = UciIncoming::uci_decode(cmd).unwrap() else {
+            panic!("expected Position");
+        };
+        assert_eq!(game.status(), GameStatus::Checkmate);
     }
 
     #[test]

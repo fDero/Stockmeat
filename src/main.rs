@@ -9,10 +9,8 @@ mod model;
 mod moves;
 mod patterns;
 
-use format::FenDecode;
+use format::{FenDecode, STARTING_FEN};
 use model::Game;
-
-const STARTING_FEN: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
 fn main() -> anyhow::Result<()> {
     let game = Game::fen_decode(STARTING_FEN)?;

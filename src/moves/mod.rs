@@ -1,7 +1,7 @@
 /*---------------------------------------------------------------------+
 |  ========================== RUST-MODULE ============================ |
 |     Author: fDero (francescodero@outlook.it - github.com/fDero)      |
-|       LICENSE: MIT (https://choosealicense.com/licenses/mit/)        |
+|               LICENSE: MIT (https://mit-license.org)                 |
 +---------------------------------------------------------------------*/
 
 mod threats;

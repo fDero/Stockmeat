@@ -4,7 +4,7 @@
 |               LICENSE: MIT (https://mit-license.org)                 |
 +---------------------------------------------------------------------*/
 
-use crate::model::{Rights, Square, Piece, SquareList, Move, Bitboard};
+use crate::model::{Rights, Square, SquareList, Bitboard};
 use Square::*;
 
 impl Rights {

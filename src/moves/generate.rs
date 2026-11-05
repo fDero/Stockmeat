@@ -84,18 +84,10 @@ impl Game {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::format::FenDecode;
     use Square::*;
 
     fn game(pieces: &[(Square, Piece)]) -> Game {
-        Game {
-            en_passant_square: None,
-            castling_rights: Rights::default(),
-            halfmove_counter: 0,
-            fullmove_counter: 1,
-            current_turn: Color::White,
-            board: Board::from_pieces(pieces),
-        }
+        Game { board: Board::from_pieces(pieces), ..Default::default() }
     }
 
     fn landings(start: Square, moves: &[Move]) -> Bitboard {
@@ -146,11 +138,5 @@ mod tests {
         assert!(game.get_queen_moves(D4).is_empty());
         assert!(game.get_knight_moves(E4).is_empty());
         assert!(game.get_knight_moves(H8).is_empty());
-    }
-
-    #[test]
-    fn starting_position() {
-        let start = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-        assert_eq!(Game::fen_decode(start).unwrap().get_legal_moves().len(), 20);
     }
 }

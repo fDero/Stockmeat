@@ -1,11 +1,14 @@
 /*---------------------------------------------------------------------+
 |  ========================== RUST-MODULE ============================ |
 |     Author: fDero (francescodero@outlook.it - github.com/fDero)      |
-|       LICENSE: MIT (https://choosealicense.com/licenses/mit/)        |
+|               LICENSE: MIT (https://mit-license.org)                 |
 +---------------------------------------------------------------------*/
 
 use regex::Regex;
 use std::sync::LazyLock;
+
+pub static STARTING_FEN: &str
+    = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
 pub static FEN_CASTLING_RGX: LazyLock<Regex> = LazyLock::new(|| Regex::new(
     r"^(?:-|KQ?k?q?|Qk?q?|kq?|q)$"

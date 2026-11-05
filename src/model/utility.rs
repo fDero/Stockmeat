@@ -18,6 +18,25 @@ pub enum Color {
     Black,
 }
 
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub struct Rights {
+    pub white_short: bool,
+    pub white_long:  bool,
+    pub black_short: bool,
+    pub black_long:  bool,
+}
+
+impl Default for Rights {
+    fn default() -> Self {
+        Rights {
+            white_short: true,
+            white_long:  true,
+            black_short: true,
+            black_long:  true,
+        }
+    }
+}
+
 impl Piece {
     pub fn color(self) -> Color {
         match self {

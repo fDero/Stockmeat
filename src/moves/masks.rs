@@ -4,8 +4,7 @@
 |               LICENSE: MIT (https://mit-license.org)                 |
 +---------------------------------------------------------------------*/
 
-use crate::model::{Bitboard, Board, Color, Game, Piece, Square};
-use crate::patterns::*;
+use crate::model::{Bitboard, Board, Color, Piece, Square};
 
 impl Board {
     pub fn get_color(self, square: Square) -> Option<Color> {
@@ -20,40 +19,36 @@ impl Board {
         }
     }
 
-    pub fn get_knight_mask(self, by: Color) -> Bitboard {
-        let white_mask = self.piece_bitboards()[Piece::WKnight as usize];
-        let black_mask = self.piece_bitboards()[Piece::BKnight as usize];
-        self.color_bitboards()[by as usize].when(white_mask.merge(black_mask))
-    }
-
-    pub fn get_rook_mask(self, by: Color) -> Bitboard {
-        let white_mask = self.piece_bitboards()[Piece::WRook as usize];
-        let black_mask = self.piece_bitboards()[Piece::BRook as usize];
-        self.color_bitboards()[by as usize].when(white_mask.merge(black_mask))
-    }
-
-    pub fn get_bishop_mask(self, by: Color) -> Bitboard {
-        let white_mask = self.piece_bitboards()[Piece::WBishop as usize];
-        let black_mask = self.piece_bitboards()[Piece::BBishop as usize];
-        self.color_bitboards()[by as usize].when(white_mask.merge(black_mask))
-    }
-
-    pub fn get_king_mask(self, by: Color) -> Bitboard {
-        let white_mask = self.piece_bitboards()[Piece::WKing as usize];
-        let black_mask = self.piece_bitboards()[Piece::BKing as usize];
-        self.color_bitboards()[by as usize].when(white_mask.merge(black_mask))
+    fn piece_mask(self, white: Piece, black: Piece, by: Color) -> Bitboard {
+        let piece = match by {
+            Color::White => white,
+            Color::Black => black,
+        };
+        self.piece_bitboards()[piece as usize]
     }
 
     pub fn get_pawn_mask(self, by: Color) -> Bitboard {
-        let white_mask = self.piece_bitboards()[Piece::WPawn as usize];
-        let black_mask = self.piece_bitboards()[Piece::BPawn as usize];
-        self.color_bitboards()[by as usize].when(white_mask.merge(black_mask))
+        self.piece_mask(Piece::WPawn, Piece::BPawn, by)
+    }
+
+    pub fn get_knight_mask(self, by: Color) -> Bitboard {
+        self.piece_mask(Piece::WKnight, Piece::BKnight, by)
+    }
+
+    pub fn get_bishop_mask(self, by: Color) -> Bitboard {
+        self.piece_mask(Piece::WBishop, Piece::BBishop, by)
+    }
+
+    pub fn get_rook_mask(self, by: Color) -> Bitboard {
+        self.piece_mask(Piece::WRook, Piece::BRook, by)
     }
 
     pub fn get_queen_mask(self, by: Color) -> Bitboard {
-        let white_mask = self.piece_bitboards()[Piece::WQueen as usize];
-        let black_mask = self.piece_bitboards()[Piece::BQueen as usize];
-        self.color_bitboards()[by as usize].when(white_mask.merge(black_mask))
+        self.piece_mask(Piece::WQueen, Piece::BQueen, by)
+    }
+
+    pub fn get_king_mask(self, by: Color) -> Bitboard {
+        self.piece_mask(Piece::WKing, Piece::BKing, by)
     }
 }
 

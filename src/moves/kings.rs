@@ -6,7 +6,6 @@
 
 use crate::model::*;
 use crate::patterns::*;
-use crate::model::MoveList;
 
 use Piece::*;
 use Square::*;
@@ -111,7 +110,7 @@ mod tests {
     fn only_from_king_square() {
         assert!(castles(CASTLING_FEN, A1).is_empty());
         assert!(castles(CASTLING_FEN, E4).is_empty());
-        assert!(castles("r3k2r/8/8/8/8/8/8/R2K3R w KQkq - 0 1", D1).is_empty());
+        assert!(castles("r3k2r/8/8/8/8/8/8/R2K3R w kq - 0 1", D1).is_empty());
     }
 
     #[test]
