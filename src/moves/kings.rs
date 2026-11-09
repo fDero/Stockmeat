@@ -125,7 +125,7 @@ mod tests {
         let castle = moves.iter().find(|mv| mv.landing() == G1).unwrap();
         assert_eq!(castle.side_effect(), (H1, F1));
         let step = moves.iter().find(|mv| mv.landing() == F1).unwrap();
-        assert_eq!(step.side_effect(), (E1, F1));
+        assert_eq!(step.side_effect(), (E1, E1));
     }
 
     #[test]

@@ -146,10 +146,10 @@ mod tests {
     #[test]
     fn en_passant_capture() {
         let game = Game::fen_decode("4k3/8/8/3pP3/8/8/8/4K3 w - d6 0 1").unwrap();
-        let game = game.apply_unchecked(Move::new(E5, D6, None, (D5, D6)));
+        let game = game.apply_unchecked(Move::new(E5, D6, None, (D6, D5)));
         assert_eq!(game.board.fen_encode(), "4k3/8/3P4/8/8/8/8/4K3");
         let game = Game::fen_decode("4k3/8/8/8/3Pp3/8/8/4K3 b - d3 0 1").unwrap();
-        let game = game.apply_unchecked(Move::new(E4, D3, None, (D4, D3)));
+        let game = game.apply_unchecked(Move::new(E4, D3, None, (D3, D4)));
         assert_eq!(game.board.fen_encode(), "4k3/8/8/8/8/3p4/8/4K3");
     }
 

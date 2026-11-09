@@ -6,14 +6,8 @@
 
 use std::fmt::{Display, Formatter, Result};
 use std::time::Duration;
-
+use crate::search::Score;
 use crate::model::*;
-
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
-pub enum Score {
-    Centipawns(i64),
-    Mate(i64),
-}
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SearchResult {
@@ -34,9 +28,9 @@ pub enum UciOutgoing {
 
 impl Display for Score {
     fn fmt(&self, formatter: &mut Formatter<'_>) -> Result {
-        match self {
-            Score::Centipawns(cp) => write!(formatter, "cp {cp}"),
-            Score::Mate(moves)    => write!(formatter, "mate {moves}"),
+        match (self.mate_in(), self.centipawns()) {
+            (Some(plies), _) => write!(formatter, "mate {}", (plies + 1).div_euclid(2)),
+            (None, centipawns) => write!(formatter, "cp {}", centipawns.unwrap_or_default()),
         }
     }
 }
@@ -118,13 +112,31 @@ mod tests {
     #[test]
     fn info_with_pv() {
         let pv = [Move::from_squares(E2, E4), Move::from_squares(E7, E5)];
-        let info = UciOutgoing::Info(result(Score::Centipawns(-35), &pv, 50));
+        let info = UciOutgoing::Info(result(Score::from_centipawns(-35), &pv, 50));
         assert_eq!(info.to_string(), "info depth 3 seldepth 7 score cp -35 nodes 5000 nps 100000 time 50 pv e2e4 e7e5");
     }
 
     #[test]
     fn info_mate_without_pv_and_zero_time() {
-        let info = UciOutgoing::Info(result(Score::Mate(-2), &[], 0));
+        let info = UciOutgoing::Info(result(Score::from_mate_in(-4), &[], 0));
         assert_eq!(info.to_string(), "info depth 3 seldepth 7 score mate -2 nodes 5000 nps 5000000000 time 0");
+    }
+
+    #[test]
+    fn score_formatting() {
+        let cases = [
+            (Score::from_centipawns(0), "cp 0"),
+            (Score::from_centipawns(-35), "cp -35"),
+            (Score::from_centipawns(i32::MAX), "cp 10000"),
+            (Score::from_mate_in(1), "mate 1"),     // we mate on our next move
+            (Score::from_mate_in(3), "mate 2"),     // our move, theirs, our mating move
+            (Score::from_mate_in(4), "mate 2"),
+            (Score::from_mate_in(-2), "mate -1"),   // their mating move comes after ours
+            (Score::from_mate_in(-4), "mate -2"),
+            (Score::from_mate_in(0), "mate 0"),     // already checkmated
+        ];
+        for (score, expected) in cases {
+            assert_eq!(score.to_string(), expected, "{score:?}");
+        }
     }
 }

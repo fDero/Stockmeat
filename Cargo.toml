@@ -10,6 +10,7 @@ license = "MIT"
 [dependencies]
 anyhow = "1.0.104"
 arrayvec = "0.7.8"
+derive_more = { version = "2.1.1", features = ["not"] }
 getset = "0.1.7"
 konst = "0.4.3"
 regex = "1.13.1"

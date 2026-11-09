@@ -104,7 +104,7 @@ mod tests {
         assert_eq!(Move::from_squares(E2, E4).to_string(), "e2e4");
         assert_eq!(Move::new(E1, G1, None, (H1, F1)).to_string(), "e1g1");
         assert_eq!(Move::new(E5, D6, None, (D6, D5)).to_string(), "e5d6");
-        assert_eq!(Move::new(E7, E8, Some(WQueen), (E7, E8)).to_string(), "e7e8q");
-        assert_eq!(Move::new(B2, A1, Some(BKnight), (B2, A1)).to_string(), "b2a1n");
+        assert_eq!(Move::new(E7, E8, Some(WQueen), (E7, E7)).to_string(), "e7e8q");
+        assert_eq!(Move::new(B2, A1, Some(BKnight), (B2, B2)).to_string(), "b2a1n");
     }
 }

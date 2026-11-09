@@ -63,7 +63,7 @@ mod tests {
         let white = pawn_moves(STARTING_FEN, E2);
         assert_eq!(white.len(), 2);
         assert_eq!(landings(&white), Bitboard::from_squares(&[E3, E4]));
-        assert!(white.iter().all(|mv| mv.promotion().is_none() && mv.side_effect() == (E2, mv.landing())));
+        assert!(white.iter().all(|mv| mv.promotion().is_none() && mv.side_effect() == (E2, E2)));
         let black = pawn_moves(STARTING_FEN, D7);
         assert_eq!(landings(&black), Bitboard::from_squares(&[D6, D5]));
         assert_eq!(pawn_moves("4k3/8/8/8/4P3/8/8/4K3 w - - 0 1", E4), vec![Move::from_squares(E4, E5)]);
@@ -97,7 +97,7 @@ mod tests {
         let moves = pawn_moves("k7/4P3/8/8/8/8/8/K7 w - - 0 1", E7);
         let promoted: Vec<Option<Piece>> = moves.iter().map(|mv| mv.promotion()).collect();
         assert_eq!(promoted, vec![Some(WBishop), Some(WKnight), Some(WRook), Some(WQueen)]);
-        assert!(moves.iter().all(|mv| mv.landing() == E8 && mv.side_effect() == (E7, E8)));
+        assert!(moves.iter().all(|mv| mv.landing() == E8 && mv.side_effect() == (E7, E7)));
         let moves = pawn_moves("k7/8/8/8/8/8/3p4/K7 b - - 0 1", D2);
         assert_eq!(moves.len(), 4);
         assert!(moves.iter().all(|mv| mv.landing() == D1 && mv.promotion().map(Piece::color) == Some(Color::Black)));
