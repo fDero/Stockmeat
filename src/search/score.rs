@@ -45,6 +45,14 @@ impl Score {
             None => Some(self.raw),
         }
     }
+
+    pub fn bubble_up(self) -> Self {
+        match self.raw {
+            raw if raw >  Self::MAX_CENTIPAWNS => Self { raw: raw - 1 },
+            raw if raw < -Self::MAX_CENTIPAWNS => Self { raw: raw + 1 },
+            _ => self,
+        }
+    }
 }
 
 /*---------------------------------------------------------------------+
@@ -120,5 +128,20 @@ mod tests {
         }
         let score = Score::from_mate_in(4);
         assert_eq!(-(-score), score);
+    }
+
+    #[test]
+    fn bubble_up_leaves_centipawns_untouched() {
+        for cp in [0, 35, -35, Score::MAX_CENTIPAWNS, -Score::MAX_CENTIPAWNS] {
+            let score = Score::from_centipawns(cp);
+            assert_eq!(score.bubble_up(), score, "{cp}");
+        }
+    }
+
+    #[test]
+    fn bubble_up_pushes_mates_one_ply_further() {
+        assert_eq!(Score::from_mate_in(3).bubble_up(), Score::from_mate_in(4));
+        assert_eq!(Score::from_mate_in(-3).bubble_up(), Score::from_mate_in(-4));
+        assert_eq!(Score::from_mate_in(0).bubble_up(), Score::from_mate_in(-1));
     }
 }
