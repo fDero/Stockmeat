@@ -6,26 +6,23 @@
 
 use crate::model::*;
 use getset::CopyGetters;
+use derive_more::Constructor;
 use arrayvec::ArrayVec;
 use Piece::*;
 
 pub type MoveList<const N: usize> =
     ArrayVec<Move, N>;
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, CopyGetters)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, CopyGetters, Constructor)]
 #[getset(get_copy = "pub")]
 pub struct Move {
-    side_effect: (Square, Square),
-    promotion: Option<Piece>,
-    landing: Square,
     start: Square,
+    landing: Square,
+    promotion: Option<Piece>,
+    side_effect: (Square, Square),
 }
 
 impl Move {
-    pub fn new(start: Square, landing: Square, promotion: Option<Piece>, side_effect: (Square, Square)) -> Move {
-        Self { start, landing, side_effect, promotion }
-    }
-
     pub fn from_squares(start: Square, landing: Square) -> Move {
         Self { start, landing, side_effect: (start, start), promotion: None }
     }

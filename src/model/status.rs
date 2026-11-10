@@ -4,27 +4,33 @@
 |               LICENSE: MIT (https://mit-license.org)                 |
 +---------------------------------------------------------------------*/
 
-use crate::model::{Bitboard, Color, Game};
+use crate::model::{Bitboard, Color, Game, History, MoveList};
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum GameStatus {
-    Ongoing,
-    Checkmate,
+    Ongoing(MoveList<256>),
+    ThreefoldRepetition,
+    Checkmate(Color),
     Stalemate,
     FiftyMoves,
     NoPieces,
 }
 
 impl Game {
-    pub fn status(&self) -> GameStatus {
+    pub fn status(&self, history: &History) -> GameStatus {
         let moves = self.get_legal_moves();
         let in_check = self.board.is_in_check(self.current_turn);
+        let enemy = self.current_turn.opposite();
+        let count = history.count(self);
+        let marked = history.latest() == Some(self);
         match () {
             _ if !in_check && moves.is_empty()      => GameStatus::Stalemate,
-            _ if in_check && moves.is_empty()       => GameStatus::Checkmate,
+            _ if in_check && moves.is_empty()       => GameStatus::Checkmate(enemy),
             _ if self.halfmove_counter >= 100       => GameStatus::FiftyMoves,
             _ if self.is_insufficient_material()    => GameStatus::NoPieces,
-            _                                       => GameStatus::Ongoing,
+            _ if count >= 2 && marked               => GameStatus::ThreefoldRepetition,
+            _ if count >= 3                         => GameStatus::ThreefoldRepetition,
+            _                                       => GameStatus::Ongoing(moves),
         }
     }
 
@@ -58,14 +64,15 @@ mod tests {
     use crate::format::FenDecode;
 
     fn status(fen: &str) -> GameStatus {
-        Game::fen_decode(fen).unwrap().status()
+        let history = History::new();
+        Game::fen_decode(fen).unwrap().status(&history)
     }
 
     #[test]
     fn checkmate() {
         let fools_mate = "rnb1kbnr/pppp1ppp/8/4p3/6Pq/5P2/PPPPP2P/RNBQKBNR w KQkq - 1 3";
-        assert_eq!(status(fools_mate), GameStatus::Checkmate);
-        assert_eq!(status("R5k1/5ppp/8/8/8/8/8/6K1 b - - 0 1"), GameStatus::Checkmate);
+        assert!(matches!(status(fools_mate), GameStatus::Checkmate(_)));
+        assert!(matches!(status("R5k1/5ppp/8/8/8/8/8/6K1 b - - 0 1"), GameStatus::Checkmate(_)));
     }
 
     #[test]
@@ -76,12 +83,12 @@ mod tests {
     #[test]
     fn fifty_moves() {
         assert_eq!(status("4k3/8/8/8/8/8/8/R3K3 b - - 100 80"), GameStatus::FiftyMoves);
-        assert_eq!(status("4k3/8/8/8/8/8/8/R3K3 b - - 99 80"), GameStatus::Ongoing);
+        assert!(matches!(status("4k3/8/8/8/8/8/8/R3K3 b - - 99 80"), GameStatus::Ongoing(_)));
     }
 
     #[test]
     fn checkmate_beats_fifty_moves() {
-        assert_eq!(status("R5k1/5ppp/8/8/8/8/8/6K1 b - - 100 80"), GameStatus::Checkmate);
+        assert!(matches!(status("R5k1/5ppp/8/8/8/8/8/6K1 b - - 100 80"), GameStatus::Checkmate(_)));
     }
 
     #[test]
@@ -101,7 +108,7 @@ mod tests {
             "4k3/8/8/8/8/8/8/2BNK3 w - - 0 1",    // KBN v K
             "4k3/8/8/8/8/8/4P3/4K3 w - - 0 1",    // KP v K
         ] {
-            assert_eq!(status(fen), GameStatus::Ongoing, "{}", fen);
+            assert!(matches!(status(fen), GameStatus::Ongoing(_)), "{}", fen);
         }
     }
 }

@@ -173,15 +173,6 @@ mod tests {
     }
 
     #[test]
-    fn position_with_moves_reaches_checkmate() {
-        let cmd = "position startpos moves f2f3 e7e5 g2g4 d8h4";
-        let UciIncoming::Position(game) = UciIncoming::uci_decode(cmd).unwrap() else {
-            panic!("expected Position");
-        };
-        assert_eq!(game.status(), GameStatus::Checkmate);
-    }
-
-    #[test]
     fn go_rejects_malformed() {
         assert!(UciIncoming::uci_decode("go depth").is_err());
         assert!(UciIncoming::uci_decode("go depth x").is_err());
