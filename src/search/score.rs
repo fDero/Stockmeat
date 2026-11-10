@@ -11,14 +11,14 @@ use getset::CopyGetters;
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, CopyGetters, Neg)]
 #[getset(get_copy = "pub")]
 pub struct Score {
-    raw: i32,
+    raw: i32
 }
 
 impl Score {
     pub const MATE: i32 = 30_000;
     pub const MAX_CENTIPAWNS: i32 = 10_000;
     const MAX_MATE_DISTANCE: i32 = Self::MATE - Self::MAX_CENTIPAWNS - 1;
-    
+
     pub fn from_mate_in(moves: i32) -> Self {
         let moves = moves.clamp(-Self::MAX_MATE_DISTANCE, Self::MAX_MATE_DISTANCE);
         match moves {
