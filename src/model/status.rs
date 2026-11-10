@@ -28,7 +28,7 @@ impl Game {
             _ if in_check && moves.is_empty()       => GameStatus::Checkmate(enemy),
             _ if self.halfmove_counter >= 100       => GameStatus::FiftyMoves,
             _ if self.is_insufficient_material()    => GameStatus::NoPieces,
-            _ if count >= 2 && marked               => GameStatus::ThreefoldRepetition,
+            _ if count >= 2 && !marked              => GameStatus::ThreefoldRepetition,
             _ if count >= 3                         => GameStatus::ThreefoldRepetition,
             _                                       => GameStatus::Ongoing(moves),
         }
