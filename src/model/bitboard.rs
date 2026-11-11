@@ -79,6 +79,17 @@ impl Bitboard {
     pub const fn with(self, list: &[Square]) -> Bitboard {
         Bitboard { bits: self.bits | Self::from_squares(list).bits }
     }
+
+    /// Yields every square set in the bitboard, lowest index first (A8 towards H1).
+    pub fn iterate(self) -> impl Iterator<Item = Square> {
+        let mut bits = self.bits;
+        std::iter::from_fn(move || {
+            let index = bits.trailing_zeros() as u8;
+            let out = (bits != 0).then(|| Square::from_index(index));
+            bits &= bits.wrapping_sub(1);
+            out
+        })
+    }
 }
 
 /*---------------------------------------------------------------------+
@@ -129,6 +140,14 @@ mod tests {
             assert_eq!(Bitboard::LIGHT_SQUARES.contains(square), light, "{:?}", square);
         }
         assert_eq!(Bitboard::LIGHT_SQUARES.bits().count_ones(), 32);
+    }
+
+    #[test]
+    fn iterate() {
+        let squares: Vec<Square> = Bitboard::from_squares(&[A1, E4, H8]).iterate().collect();
+        assert_eq!(squares, vec![H8, E4, A1]);
+        assert_eq!(Bitboard::EMPTY.iterate().count(), 0);
+        assert_eq!(Bitboard::from_bits(u64::MAX).iterate().count(), 64);
     }
 
     #[test]

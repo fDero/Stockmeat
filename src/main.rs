@@ -9,6 +9,7 @@ mod model;
 mod moves;
 mod patterns;
 mod search;
+mod scores;
 
 use format::{FenDecode, STARTING_FEN};
 use model::Game;

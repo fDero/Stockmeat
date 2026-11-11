@@ -29,7 +29,7 @@ impl Move {
 
     pub fn from_mask<const N: usize>(start: Square, mask: Bitboard) -> MoveList<N> {
         let mapping = |landing| Self::from_squares(start, landing);
-        Self::iterate_bitboard(mask).map(mapping).collect()
+        mask.iterate().map(mapping).collect()
     }
 
     pub fn promotions(&self, color : Color) -> MoveList<4> {
@@ -41,15 +41,6 @@ impl Move {
         pieces.into_iter().map(promote).collect()
     }
 
-    fn iterate_bitboard(bitboard : Bitboard) -> impl Iterator<Item = Square> {
-        let mut bits = bitboard.bits();
-        std::iter::from_fn(move || {
-            let index = bits.trailing_zeros() as u8;
-            let out = (bits != 0).then(|| {Square::from_index(index)});
-            bits &= bits.wrapping_sub(1);
-            out
-        })
-    }
 }
 
 /*---------------------------------------------------------------------+
@@ -78,14 +69,6 @@ mod tests {
         let mv = Move::from_squares(E2, E4);
         assert_eq!((mv.start, mv.landing, mv.promotion), (E2, E4, None));
         assert_eq!(mv.side_effect, (E2, E2));
-    }
-
-    #[test]
-    fn iterate_bitboard() {
-        let squares: Vec<Square> = Move::iterate_bitboard(Bitboard::from_squares(&[A1, E4, H8])).collect();
-        assert_eq!(squares, vec![H8, E4, A1]);
-        assert_eq!(Move::iterate_bitboard(Bitboard::EMPTY).count(), 0);
-        assert_eq!(Move::iterate_bitboard(Bitboard::from_bits(u64::MAX)).count(), 64);
     }
 
     #[test]

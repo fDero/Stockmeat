@@ -6,7 +6,7 @@
 
 use std::fmt::{Display, Formatter, Result};
 use std::time::Duration;
-use crate::search::Score;
+use crate::scores::Score;
 use crate::model::*;
 
 #[derive(Clone, Debug, PartialEq, Eq)]

@@ -71,7 +71,7 @@ mod tests {
     use super::*;
     use crate::format::FenDecode;
     use crate::model::{Game, Square};
-    use crate::search::Score;
+    use crate::scores::Score;
     use Square::*;
 
     fn hash(fen: &str) -> PositionHash {
