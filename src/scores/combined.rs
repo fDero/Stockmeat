@@ -45,6 +45,7 @@ impl Board {
             let b = self.piece_bitboards()[bpiece as usize].bits().count_ones() as i32;
             phase += weight * (w + b);
         }
+        phase = i32::min(phase, MAX_PHASE);
         let middlegame = self.middlegame_combined_heuristic();
         let endgame = self.endgame_combined_heuristic();
         (middlegame * phase + endgame * (MAX_PHASE - phase)) / MAX_PHASE
