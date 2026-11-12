@@ -44,9 +44,10 @@ impl Game {
         let knights = both(|b, c| b.get_knight_mask(c));
         let bishops = both(|b, c| b.get_bishop_mask(c));
         let minors  = knights.merge(bishops).bits().count_ones();
+        const LIGHT_SQUARES : Bitboard = Bitboard::from_bits(0xAA55_AA55_AA55_AA55);
         let same_colored_bishops = knights == Bitboard::EMPTY && (
-            bishops.without(Bitboard::LIGHT_SQUARES) == Bitboard::EMPTY ||
-            bishops.when(Bitboard::LIGHT_SQUARES) == Bitboard::EMPTY
+            bishops.without(LIGHT_SQUARES) == Bitboard::EMPTY ||
+            bishops.when(LIGHT_SQUARES) == Bitboard::EMPTY
         );
         heavy_or_pawns == Bitboard::EMPTY && (minors <= 1 || same_colored_bishops)
     }

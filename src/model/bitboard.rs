@@ -29,9 +29,6 @@ impl Bitboard {
         A1, B8, C8, D8, E8, F8, G8, A8,
     ]);
 
-    /// Squares where (file + rank) is odd, e.g. A8 and H1 (index 0 is A8).
-    pub const LIGHT_SQUARES : Bitboard = Self::from_bits(0xAA55_AA55_AA55_AA55);
-
     pub const fn from_bits(bits: u64) -> Bitboard {
         Bitboard { bits }
     }
@@ -80,7 +77,6 @@ impl Bitboard {
         Bitboard { bits: self.bits | Self::from_squares(list).bits }
     }
 
-    /// Yields every square set in the bitboard, lowest index first (A8 towards H1).
     pub fn iterate(self) -> impl Iterator<Item = Square> {
         let mut bits = self.bits;
         std::iter::from_fn(move || {
@@ -132,14 +128,6 @@ mod tests {
         let right = Bitboard::from_squares(&[E4, D5]);
         assert_eq!(left.diff(right), Bitboard::from_squares(&[A1, H8]));
         assert_eq!(left.when(right), Bitboard::from_squares(&[E4]));
-    }
-
-    #[test]
-    fn light_squares() {
-        for (square, light) in [(A8, true), (H1, true), (D1, true), (A1, false), (H8, false), (E4, true), (D4, false)] {
-            assert_eq!(Bitboard::LIGHT_SQUARES.contains(square), light, "{:?}", square);
-        }
-        assert_eq!(Bitboard::LIGHT_SQUARES.bits().count_ones(), 32);
     }
 
     #[test]
