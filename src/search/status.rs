@@ -4,7 +4,8 @@
 |               LICENSE: MIT (https://mit-license.org)                 |
 +---------------------------------------------------------------------*/
 
-use crate::model::{Bitboard, Color, Game, History, MoveList};
+use crate::model::{Bitboard, Color, Game, MoveList};
+use super::History;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum GameStatus {
@@ -22,7 +23,7 @@ impl Game {
         let in_check = self.board.is_in_check(self.current_turn);
         let enemy = self.current_turn.opposite();
         let count = history.count(self);
-        let marked = history.latest() == Some(self);
+        let marked = history.latest() == Some(*self);
         match () {
             _ if !in_check && moves.is_empty()      => GameStatus::Stalemate,
             _ if in_check && moves.is_empty()       => GameStatus::Checkmate(enemy),
@@ -65,7 +66,7 @@ mod tests {
     use crate::format::FenDecode;
 
     fn status(fen: &str) -> GameStatus {
-        let history = History::new();
+        let history = History::default();
         Game::fen_decode(fen).unwrap().status(&history)
     }
 

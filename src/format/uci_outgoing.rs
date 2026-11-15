@@ -5,19 +5,10 @@
 +---------------------------------------------------------------------*/
 
 use std::fmt::{Display, Formatter, Result};
-use std::time::Duration;
 use crate::scores::Score;
+use crate::search::ApproxScore::{Exact, GreaterThan, LessThan};
+use crate::search::{ApproxScore, SearchResult};
 use crate::model::*;
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct SearchResult {
-    pub best_variation:  MoveList<300>,
-    pub search_duration: Duration,
-    pub minimum_depth:   u32,
-    pub maximum_depth:   u32,
-    pub updated_score:   Score,
-    pub nodes_counter:   u64,
-}
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum UciOutgoing {
@@ -35,20 +26,30 @@ impl Display for Score {
     }
 }
 
+impl Display for ApproxScore {
+    fn fmt(&self, formatter: &mut Formatter<'_>) -> Result {
+        match self {
+            Exact(score) => write!(formatter, "{}", score),
+            LessThan(score) => write!(formatter, "{} upperbound", score),
+            GreaterThan(score) => write!(formatter, "{} lowerbound", score),
+        }
+    }
+}
+
 impl Display for SearchResult {
     fn fmt(&self, formatter: &mut Formatter<'_>) -> Result {
-        let millis = self.search_duration.as_millis();
-        let micros = self.search_duration.as_micros().max(1);
-        let nps = self.nodes_counter as u128 * 1_000_000 / micros;
-        let formatted = self.best_variation.iter().map(|mov| format!(" {mov}"));
+        let millis = self.search_duration().as_millis();
+        let micros = self.search_duration().as_micros().max(1);
+        let nps = self.nodes_counter() as u128 * 1_000_000 / micros;
+        let formatted = self.best_variation().iter().map(|mov| format!(" {mov}"));
         let moves: String = formatted.collect();
         let pv = match moves.len() {
             0  => String::new(),
             _ => format!(" pv{moves}"),
         };
         write!(formatter, "info depth {} seldepth {} score {} nodes {} nps {} time {}{}",
-            self.minimum_depth, self.maximum_depth, self.updated_score,
-            self.nodes_counter, nps, millis, pv,
+            self.minimum_depth(), self.maximum_depth(), self.updated_score(),
+            self.nodes_counter(), nps, millis, pv,
         )
     }
 }
@@ -78,18 +79,14 @@ impl Display for UciOutgoing {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use std::time::Duration;
     use Square::*;
+    use super::*;
 
     fn result(score: Score, pv: &[Move], millis: u64) -> SearchResult {
-        SearchResult {
-            best_variation: pv.iter().copied().collect(),
-            search_duration: Duration::from_millis(millis),
-            minimum_depth: 3,
-            maximum_depth: 7,
-            updated_score: score,
-            nodes_counter: 5000,
-        }
+        let variation = pv.iter().copied().collect();
+        let exact = Exact(score);
+        SearchResult::new(variation, Duration::from_millis(millis), exact, 3, 7, 5000)
     }
 
     #[test]
@@ -120,6 +117,13 @@ mod tests {
     fn info_mate_without_pv_and_zero_time() {
         let info = UciOutgoing::Info(result(Score::from_mate_in(-4), &[], 0));
         assert_eq!(info.to_string(), "info depth 3 seldepth 7 score mate -2 nodes 5000 nps 5000000000 time 0");
+    }
+
+    #[test]
+    fn bounds_are_reported() {
+        assert_eq!(Exact(Score::from_centipawns(35)).to_string(), "cp 35");
+        assert_eq!(LessThan(Score::from_centipawns(35)).to_string(), "cp 35 upperbound");
+        assert_eq!(GreaterThan(Score::from_mate_in(3)).to_string(), "mate 2 lowerbound");
     }
 
     #[test]

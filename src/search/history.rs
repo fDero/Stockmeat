@@ -6,7 +6,15 @@
 
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
-use crate::model::{Board, Color, Game, Rights, Square};
+
+use crate::model::{Board, Color, Game, Move, Rights, Square};
+
+#[derive(Clone, Debug, PartialEq, Eq, Default)]
+pub struct History {
+    starting_pos: Game,
+    moves_vec: Vec<(Move, Game)>,
+    reps: HashMap<PositionKey, u8>,
+}
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 struct PositionKey {
@@ -14,6 +22,33 @@ struct PositionKey {
     castling_rights: Rights,
     current_turn: Color,
     board: Board,
+}
+
+impl History {
+    pub fn play(&mut self, mov: Move) {
+        let game = self.latest().unwrap_or(self.starting_pos).apply_unchecked(mov);
+        *self.reps.entry(PositionKey::from(&game)).or_insert(0) += 1;
+        self.moves_vec.push((mov, game));
+    }
+
+    pub fn takeback(&mut self) -> Option<Game> {
+        let (_, game) = self.moves_vec.pop()?;
+        let key = PositionKey::from(&game);
+        match self.reps.get_mut(&key) {
+            Some(count) if *count > 1 => *count -= 1,
+            _ => { self.reps.remove(&key); }
+        }
+        Some(game)
+    }
+
+    pub fn latest(&self) -> Option<Game> {
+        let pair = self.moves_vec.last()?;
+        return Some(pair.1);
+    }
+
+    pub fn count(&self, game: &Game) -> u8 {
+        self.reps.get(&PositionKey::from(game)).copied().unwrap_or(0)
+    }
 }
 
 impl From<&Game> for PositionKey {
@@ -38,40 +73,6 @@ impl Hash for PositionKey {
     }
 }
 
-pub struct History {
-    reps: HashMap<PositionKey, u8>,
-    moves_log: Vec<Game>,
-}
-
-impl History {
-    pub fn new() -> Self {
-        History { reps: HashMap::new(), moves_log: Vec::new() }
-    }
-
-    pub fn add(&mut self, game: Game) {
-        *self.reps.entry(PositionKey::from(&game)).or_insert(0) += 1;
-        self.moves_log.push(game);
-    }
-
-    pub fn takeback(&mut self) -> Option<Game> {
-        let game = self.moves_log.pop()?;
-        let key = PositionKey::from(&game);
-        match self.reps.get_mut(&key) {
-            Some(count) if *count > 1 => *count -= 1,
-            _ => { self.reps.remove(&key); }
-        }
-        Some(game)
-    }
-
-    pub fn latest(&self) -> Option<&Game> {
-        self.moves_log.last()
-    }
-
-    pub fn count(&self, game: &Game) -> u8 {
-        self.reps.get(&PositionKey::from(game)).copied().unwrap_or(0)
-    }
-}
-
 /*---------------------------------------------------------------------+
 |  =========================== UNIT-TESTS ============================ |
 |     Author: fDero (francescodero@outlook.it - github.com/fDero)      |
@@ -81,39 +82,33 @@ impl History {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::model::Move;
     use Square::*;
 
-    fn reps(history: &History, game: &Game) -> u8 {
-        history.count(game)
-    }
-
-    fn play(history: &mut History, game: Game, moves: &[(Square, Square)]) -> Game {
-        moves.iter().fold(game, |game, &(start, landing)| {
-            let next = game.apply_unchecked(Move::from_squares(start, landing));
-            history.add(next);
-            next
-        })
+    fn play(history: &mut History, moves: &[(Square, Square)]) {
+        for &(start, landing) in moves {
+            history.play(Move::from_squares(start, landing));
+        }
     }
 
     #[test]
     fn new_history_is_empty() {
-        let mut history = History::new();
-        assert_eq!(reps(&history, &Game::default()), 0);
+        let mut history = History::default();
+        assert_eq!(history.count(&Game::default()), 0);
+        assert_eq!(history.latest(), None);
         assert!(history.takeback().is_none());
     }
 
     #[test]
-    fn add_then_takeback_returns_the_same_game() {
-        let mut history = History::new();
-        let start = Game::default();
-        let after = start.apply_unchecked(Move::from_squares(E2, E4));
-        history.add(start);
-        history.add(after);
-        assert_eq!(history.latest(), Some(&after));
-        assert_eq!(history.takeback(), Some(after));
-        assert_eq!(history.latest(), Some(&start));
-        assert_eq!(history.takeback(), Some(start));
+    fn play_then_takeback_returns_the_same_game() {
+        let mut history = History::default();
+        let e4 = Game::default().apply_unchecked(Move::from_squares(E2, E4));
+        let e5 = e4.apply_unchecked(Move::from_squares(E7, E5));
+        play(&mut history, &[(E2, E4), (E7, E5)]);
+        assert_eq!(history.latest(), Some(e5));
+        assert_eq!(history.count(&e5), 1);
+        assert_eq!(history.takeback(), Some(e5));
+        assert_eq!(history.latest(), Some(e4));
+        assert_eq!(history.takeback(), Some(e4));
         assert_eq!(history.latest(), None);
         assert!(history.takeback().is_none());
         assert!(history.reps.is_empty());
@@ -121,19 +116,18 @@ mod tests {
 
     #[test]
     fn takeback_decrements_and_removes() {
-        let mut history = History::new();
+        let mut history = History::default();
+        let shuffle = [(G1, F3), (G8, F6), (F3, G1), (F6, G8)];
+        play(&mut history, &shuffle);
+        play(&mut history, &shuffle);
         let start = Game::default();
-        history.add(start);
-        play(&mut history, start, &[
-            (G1, F3), (G8, F6), (F3, G1), (F6, G8)
-        ]);
-        assert_eq!(reps(&history, &start), 2);
+        assert_eq!(history.count(&start), 2);
         history.takeback();
-        assert_eq!(reps(&history, &start), 1);
-        for _ in 0..4 {
+        assert_eq!(history.count(&start), 1);
+        for _ in 0..7 {
             history.takeback();
         }
-        assert_eq!(reps(&history, &start), 0);
+        assert_eq!(history.count(&start), 0);
         assert!(history.reps.is_empty());
     }
 }

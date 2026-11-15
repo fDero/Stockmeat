@@ -4,9 +4,15 @@
 |               LICENSE: MIT (https://mit-license.org)                 |
 +---------------------------------------------------------------------*/
 
-mod negmax;
+mod approx;
+mod result;
 mod ttable;
 mod hashing;
+mod status;
+mod history;
 
 pub use hashing::PositionHash;
-pub use negmax::ApproxScore;
+pub use approx::ApproxScore;
+pub use result::SearchResult;
+pub use status::GameStatus;
+pub use history::History;
