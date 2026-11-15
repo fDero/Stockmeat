@@ -77,7 +77,7 @@ impl Bitboard {
         Bitboard { bits: self.bits | Self::from_squares(list).bits }
     }
 
-    pub fn iterate(self) -> impl Iterator<Item = Square> {
+    pub fn iter(self) -> impl Iterator<Item = Square> {
         let mut bits = self.bits;
         std::iter::from_fn(move || {
             let index = bits.trailing_zeros() as u8;
@@ -131,11 +131,11 @@ mod tests {
     }
 
     #[test]
-    fn iterate() {
-        let squares: Vec<Square> = Bitboard::from_squares(&[A1, E4, H8]).iterate().collect();
+    fn iter() {
+        let squares: Vec<Square> = Bitboard::from_squares(&[A1, E4, H8]).iter().collect();
         assert_eq!(squares, vec![H8, E4, A1]);
-        assert_eq!(Bitboard::EMPTY.iterate().count(), 0);
-        assert_eq!(Bitboard::from_bits(u64::MAX).iterate().count(), 64);
+        assert_eq!(Bitboard::EMPTY.iter().count(), 0);
+        assert_eq!(Bitboard::from_bits(u64::MAX).iter().count(), 64);
     }
 
     #[test]

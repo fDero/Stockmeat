@@ -30,7 +30,7 @@ impl SearchResult {
             heuristic = -heuristic;
         }
         let score = match game.status(history) {
-            GameStatus::Checkmate(_) => Score::from_mate_in(0),
+            GameStatus::Checkmate(_) => Score::from_mate_in_plies(0),
             GameStatus::Ongoing(_)   => Score::from_centipawns(heuristic),
             _                        => Score::from_centipawns(0),
         };
@@ -88,7 +88,7 @@ mod tests {
     #[test]
     fn leaf_scores_terminal_positions() {
         let fools_mate = "rnb1kbnr/pppp1ppp/8/4p3/6Pq/5P2/PPPPP2P/RNBQKBNR w KQkq - 1 3";
-        assert_eq!(leaf(fools_mate).updated_score(), Exact(Score::from_mate_in(0)));
+        assert_eq!(leaf(fools_mate).updated_score(), Exact(Score::from_mate_in_plies(0)));
         assert_eq!(leaf("7k/5Q2/6K1/8/8/8/8/8 b - - 0 1").updated_score(), Exact(cp(0)));
     }
 
@@ -116,7 +116,7 @@ mod tests {
 
     #[test]
     fn mates_beat_centipawns() {
-        let mate = Exact(Score::from_mate_in(3));
+        let mate = Exact(Score::from_mate_in_plies(3));
         let merged = scored(Exact(cp(Score::MAX_CENTIPAWNS))).merge(scored(mate));
         assert_eq!(merged.updated_score(), mate);
     }

@@ -10,8 +10,8 @@ pub type Table = [i32; 64];
 
 impl Board {
     pub fn piece_square_score(self, white: Bitboard, black: Bitboard, value: i32, table: &Table) -> i32 {
-        let white_score: i32 = white.iterate().map(|square| value + table[square as usize]).sum();
-        let black_score: i32 = black.iterate().map(|square| value + table[square as usize ^ 56]).sum();
+        let white_score: i32 = white.iter().map(|square| value + table[square as usize]).sum();
+        let black_score: i32 = black.iter().map(|square| value + table[square as usize ^ 56]).sum();
         white_score - black_score
     }
 

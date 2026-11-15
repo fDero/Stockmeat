@@ -19,7 +19,7 @@ pub enum UciOutgoing<'a> {
 
 impl Display for Score {
     fn fmt(&self, formatter: &mut Formatter<'_>) -> Result {
-        match (self.mate_in(), self.centipawns()) {
+        match (self.mate_in_plies(), self.centipawns()) {
             (Some(plies), _) => write!(formatter, "mate {}", (plies + 1).div_euclid(2)),
             (None, centipawns) => write!(formatter, "cp {}", centipawns.unwrap_or_default()),
         }
@@ -28,7 +28,7 @@ impl Display for Score {
 
 impl<const N: usize> Display for PrincipalVariation<N> {
     fn fmt(&self, formatter: &mut Formatter<'_>) -> Result {
-        for (index, mov) in self.iterate().enumerate() {
+        for (index, mov) in self.iter().enumerate() {
             match index {
                 0 => write!(formatter, "{mov}")?,
                 _ => write!(formatter, " {mov}")?,
@@ -131,7 +131,7 @@ mod tests {
     #[test]
     fn info_mate_without_pv_and_zero_time() {
         let pv = variation(&[]);
-        let info = UciOutgoing::Info(result(Score::from_mate_in(-4), 0), &pv);
+        let info = UciOutgoing::Info(result(Score::from_mate_in_plies(-4), 0), &pv);
         assert_eq!(info.to_string(), "info depth 3 seldepth 7 score mate -2 nodes 5000 nps 5000000000 time 0");
     }
 
@@ -139,7 +139,7 @@ mod tests {
     fn bounds_are_reported() {
         assert_eq!(Exact(Score::from_centipawns(35)).to_string(), "cp 35");
         assert_eq!(LessThan(Score::from_centipawns(35)).to_string(), "cp 35 upperbound");
-        assert_eq!(GreaterThan(Score::from_mate_in(3)).to_string(), "mate 2 lowerbound");
+        assert_eq!(GreaterThan(Score::from_mate_in_plies(3)).to_string(), "mate 2 lowerbound");
     }
 
     #[test]
@@ -148,12 +148,12 @@ mod tests {
             (Score::from_centipawns(0), "cp 0"),
             (Score::from_centipawns(-35), "cp -35"),
             (Score::from_centipawns(i32::MAX), "cp 10000"),
-            (Score::from_mate_in(1), "mate 1"),     // we mate on our next move
-            (Score::from_mate_in(3), "mate 2"),     // our move, theirs, our mating move
-            (Score::from_mate_in(4), "mate 2"),
-            (Score::from_mate_in(-2), "mate -1"),   // their mating move comes after ours
-            (Score::from_mate_in(-4), "mate -2"),
-            (Score::from_mate_in(0), "mate 0"),     // already checkmated
+            (Score::from_mate_in_plies(1), "mate 1"),     // we mate on our next move
+            (Score::from_mate_in_plies(3), "mate 2"),     // our move, theirs, our mating move
+            (Score::from_mate_in_plies(4), "mate 2"),
+            (Score::from_mate_in_plies(-2), "mate -1"),   // their mating move comes after ours
+            (Score::from_mate_in_plies(-4), "mate -2"),
+            (Score::from_mate_in_plies(0), "mate 0"),     // already checkmated
         ];
         for (score, expected) in cases {
             assert_eq!(score.to_string(), expected, "{score:?}");

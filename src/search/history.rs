@@ -12,7 +12,7 @@ use crate::model::{Board, Color, Game, Move, Rights, Square};
 #[derive(Clone, Debug, PartialEq, Eq, Default)]
 pub struct History {
     starting_pos: Game,
-    moves_vec: Vec<(Move, Game)>,
+    snapshots: Vec<(Move, Game)>,
     reps: HashMap<PositionKey, u8>,
 }
 
@@ -28,11 +28,11 @@ impl History {
     pub fn play(&mut self, mov: Move) {
         let game = self.latest().unwrap_or(self.starting_pos).apply_unchecked(mov);
         *self.reps.entry(PositionKey::from(&game)).or_insert(0) += 1;
-        self.moves_vec.push((mov, game));
+        self.snapshots.push((mov, game));
     }
 
     pub fn takeback(&mut self) -> Option<Game> {
-        let (_, game) = self.moves_vec.pop()?;
+        let (_, game) = self.snapshots.pop()?;
         let key = PositionKey::from(&game);
         match self.reps.get_mut(&key) {
             Some(count) if *count > 1 => *count -= 1,
@@ -42,7 +42,7 @@ impl History {
     }
 
     pub fn latest(&self) -> Option<Game> {
-        let pair = self.moves_vec.last()?;
+        let pair = self.snapshots.last()?;
         return Some(pair.1);
     }
 

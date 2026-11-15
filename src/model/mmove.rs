@@ -36,7 +36,7 @@ impl Move {
 
     pub fn from_mask<const N: usize>(start: Square, mask: Bitboard) -> MoveList<N> {
         let mapping = |landing| Self::from_squares(start, landing);
-        mask.iterate().map(mapping).collect()
+        mask.iter().map(mapping).collect()
     }
 
     pub fn promotions(&self, color : Color) -> MoveList<4> {

@@ -33,13 +33,13 @@ impl<const N: usize> PrincipalVariation<N> {
         &self.moves[0][..self.lengths[0]]
     }
 
-    pub fn iterate(&self) -> impl Iterator<Item = Move> + '_ {
+    pub fn iter(&self) -> impl Iterator<Item = Move> + '_ {
         self.principal().iter().copied()
     }
 }
 
 impl<const N: usize> Debug for PrincipalVariation<N> {
     fn fmt(&self, formatter: &mut Formatter<'_>) -> Result {
-        formatter.debug_list().entries(self.iterate()).finish()
+        formatter.debug_list().entries(self.iter()).finish()
     }
 }
