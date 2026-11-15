@@ -10,9 +10,11 @@ mod ttable;
 mod hashing;
 mod status;
 mod history;
+mod variation;
 
 pub use hashing::PositionHash;
 pub use approx::ApproxScore;
 pub use result::SearchResult;
 pub use status::GameStatus;
 pub use history::History;
+pub use variation::PrincipalVariation;

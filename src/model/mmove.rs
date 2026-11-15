@@ -23,6 +23,13 @@ pub struct Move {
 }
 
 impl Move {
+    pub const NULL: Move = Move {
+        start: Square::A1,
+        landing: Square::A1,
+        promotion: None,
+        side_effect: (Square::A1, Square::A1),
+    };
+
     pub fn from_squares(start: Square, landing: Square) -> Move {
         Self { start, landing, side_effect: (start, start), promotion: None }
     }

@@ -6,18 +6,15 @@
 
 use std::time::{Duration, Instant};
 use derive_more::Constructor;
-use getset::{CopyGetters, Getters};
-use crate::model::{Color, Game, MoveList};
+use getset::CopyGetters;
+use crate::model::{Color, Game};
 use super::{GameStatus, History};
 use crate::scores::Score;
 use super::ApproxScore;
 
-#[derive(Clone, Debug, PartialEq, Eq, Getters, CopyGetters, Constructor)]
+#[derive(Clone, Debug, PartialEq, Eq, CopyGetters, Constructor)]
 #[getset(get_copy = "pub")]
 pub struct SearchResult {
-    #[getset(skip)]
-    #[getset(get = "pub")]
-    best_variation:  MoveList<300>,
     search_duration: Duration,
     updated_score:   ApproxScore,
     minimum_depth:   u32,
@@ -38,7 +35,7 @@ impl SearchResult {
             _                        => Score::from_centipawns(0),
         };
         let exact = ApproxScore::Exact(score);
-        SearchResult::new(MoveList::new(), chrono.elapsed(), exact, 0, 0, 1)
+        SearchResult::new(chrono.elapsed(), exact, 0, 0, 1)
     }
 
     pub fn merge(self, sibling: SearchResult) -> SearchResult {
@@ -70,25 +67,19 @@ impl SearchResult {
 mod tests {
     use super::*;
     use crate::format::FenDecode;
-    use crate::model::{Move, Square::*};
     use ApproxScore::*;
 
     fn cp(centipawns: i32) -> Score {
         Score::from_centipawns(centipawns)
     }
 
-    fn result(score: ApproxScore, pv: &[Move], millis: u64, depths: (u32, u32), nodes: u64) -> SearchResult {
-        let variation = pv.iter().copied().collect();
-        let duration = Duration::from_millis(millis);
-        SearchResult::new(variation, duration, score, depths.0, depths.1, nodes)
+    fn result(score: ApproxScore, millis: u64, depths: (u32, u32), nodes: u64) -> SearchResult {
+        SearchResult::new(Duration::from_millis(millis), score, depths.0, depths.1, nodes)
     }
 
-    fn scored(score: ApproxScore, pv: &[Move]) -> SearchResult {
-        result(score, pv, 0, (1, 1), 1)
+    fn scored(score: ApproxScore) -> SearchResult {
+        result(score, 0, (1, 1), 1)
     }
-
-    fn e2e4() -> [Move; 1] { [Move::from_squares(E2, E4)] }
-    fn d2d4() -> [Move; 1] { [Move::from_squares(D2, D4)] }
 
     fn leaf(fen: &str) -> SearchResult {
         SearchResult::from_leaf(Game::fen_decode(fen).unwrap(), &History::default())
@@ -102,28 +93,21 @@ mod tests {
     }
 
     #[test]
-    fn better_score_keeps_its_variation() {
-        let merged = scored(Exact(cp(10)), &e2e4()).merge(scored(Exact(cp(30)), &d2d4()));
+    fn better_score_wins() {
+        let merged = scored(Exact(cp(10))).merge(scored(Exact(cp(30))));
         assert_eq!(merged.updated_score(), Exact(cp(30)));
-        assert_eq!(merged.best_variation().as_slice(), &d2d4());
     }
 
     #[test]
     fn merge_is_symmetric_on_the_winner() {
-        let a = result(Exact(cp(10)), &e2e4(), 5, (3, 5), 100);
-        let b = result(Exact(cp(30)), &d2d4(), 7, (4, 9), 200);
+        let a = result(Exact(cp(10)), 5, (3, 5), 100);
+        let b = result(Exact(cp(30)), 7, (4, 9), 200);
         assert_eq!(a.clone().merge(b.clone()), b.merge(a));
     }
 
     #[test]
-    fn ties_keep_the_first_branch() {
-        let merged = scored(Exact(cp(20)), &e2e4()).merge(scored(Exact(cp(20)), &d2d4()));
-        assert_eq!(merged.best_variation().as_slice(), &e2e4());
-    }
-
-    #[test]
     fn work_is_accumulated() {
-        let merged = result(Exact(cp(10)), &[], 5, (3, 5), 100).merge(result(Exact(cp(30)), &[], 7, (4, 9), 200));
+        let merged = result(Exact(cp(10)), 5, (3, 5), 100).merge(result(Exact(cp(30)), 7, (4, 9), 200));
         assert_eq!(merged.search_duration(), Duration::from_millis(12));
         assert_eq!(merged.minimum_depth(), 3);
         assert_eq!(merged.maximum_depth(), 9);
@@ -133,14 +117,13 @@ mod tests {
     #[test]
     fn mates_beat_centipawns() {
         let mate = Exact(Score::from_mate_in(3));
-        let merged = scored(Exact(cp(Score::MAX_CENTIPAWNS)), &[]).merge(scored(mate, &[]));
+        let merged = scored(Exact(cp(Score::MAX_CENTIPAWNS))).merge(scored(mate));
         assert_eq!(merged.updated_score(), mate);
     }
 
     #[test]
     fn fail_low_sibling_does_not_spoil_an_exact_score() {
-        let merged = scored(LessThan(cp(5)), &e2e4()).merge(scored(Exact(cp(20)), &d2d4()));
+        let merged = scored(LessThan(cp(5))).merge(scored(Exact(cp(20))));
         assert_eq!(merged.updated_score(), Exact(cp(20)));
-        assert_eq!(merged.best_variation().as_slice(), &d2d4());
     }
 }

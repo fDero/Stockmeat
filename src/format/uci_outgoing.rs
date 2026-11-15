@@ -6,15 +6,15 @@
 
 use std::fmt::{Display, Formatter, Result};
 use crate::scores::Score;
+use crate::search::{ApproxScore, PrincipalVariation, SearchResult};
 use crate::search::ApproxScore::{Exact, GreaterThan, LessThan};
-use crate::search::{ApproxScore, SearchResult};
 use crate::model::*;
 
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum UciOutgoing {
+#[derive(Clone, Debug)]
+pub enum UciOutgoing<'a> {
     Identify, UciOk, ReadyOk,
     BestMove(MoveList<2>),
-    Info(SearchResult),
+    Info(SearchResult, &'a PrincipalVariation),
 }
 
 impl Display for Score {
@@ -23,6 +23,18 @@ impl Display for Score {
             (Some(plies), _) => write!(formatter, "mate {}", (plies + 1).div_euclid(2)),
             (None, centipawns) => write!(formatter, "cp {}", centipawns.unwrap_or_default()),
         }
+    }
+}
+
+impl<const N: usize> Display for PrincipalVariation<N> {
+    fn fmt(&self, formatter: &mut Formatter<'_>) -> Result {
+        for (index, mov) in self.iterate().enumerate() {
+            match index {
+                0 => write!(formatter, "{mov}")?,
+                _ => write!(formatter, " {mov}")?,
+            }
+        }
+        Ok(())
     }
 }
 
@@ -41,27 +53,24 @@ impl Display for SearchResult {
         let millis = self.search_duration().as_millis();
         let micros = self.search_duration().as_micros().max(1);
         let nps = self.nodes_counter() as u128 * 1_000_000 / micros;
-        let formatted = self.best_variation().iter().map(|mov| format!(" {mov}"));
-        let moves: String = formatted.collect();
-        let pv = match moves.len() {
-            0  => String::new(),
-            _ => format!(" pv{moves}"),
-        };
-        write!(formatter, "info depth {} seldepth {} score {} nodes {} nps {} time {}{}",
+        write!(formatter, "info depth {} seldepth {} score {} nodes {} nps {} time {}",
             self.minimum_depth(), self.maximum_depth(), self.updated_score(),
-            self.nodes_counter(), nps, millis, pv,
+            self.nodes_counter(), nps, millis
         )
     }
 }
 
-impl Display for UciOutgoing {
+impl Display for UciOutgoing<'_> {
     fn fmt(&self, formatter: &mut Formatter<'_>) -> Result {
         let identity = "id name Stockmeat\nid author fDero";
         match self {
             UciOutgoing::UciOk => write!(formatter, "uciok"),
             UciOutgoing::ReadyOk => write!(formatter, "readyok"),
             UciOutgoing::Identify => write!(formatter, "{}", identity),
-            UciOutgoing::Info(result) => write!(formatter, "{result}"),
+            UciOutgoing::Info(result, pv) => match pv.principal().is_empty() {
+                true  => write!(formatter, "{result}"),
+                false => write!(formatter, "{result} pv {pv}"),
+            },
             UciOutgoing::BestMove(list) => match list.len() {
                 0 => write!(formatter, "bestmove 0000"),
                 1 => write!(formatter, "bestmove {}", list[0]),
@@ -83,10 +92,16 @@ mod tests {
     use Square::*;
     use super::*;
 
-    fn result(score: Score, pv: &[Move], millis: u64) -> SearchResult {
-        let variation = pv.iter().copied().collect();
-        let exact = Exact(score);
-        SearchResult::new(variation, Duration::from_millis(millis), exact, 3, 7, 5000)
+    fn result(score: Score, millis: u64) -> SearchResult {
+        SearchResult::new(Duration::from_millis(millis), Exact(score), 3, 7, 5000)
+    }
+
+    fn variation(moves: &[Move]) -> Box<PrincipalVariation> {
+        let mut pv = Box::new(PrincipalVariation::new());
+        for (ply, &mov) in moves.iter().enumerate().rev() {
+            pv.update(ply, mov);
+        }
+        pv
     }
 
     #[test]
@@ -108,14 +123,15 @@ mod tests {
 
     #[test]
     fn info_with_pv() {
-        let pv = [Move::from_squares(E2, E4), Move::from_squares(E7, E5)];
-        let info = UciOutgoing::Info(result(Score::from_centipawns(-35), &pv, 50));
+        let pv = variation(&[Move::from_squares(E2, E4), Move::from_squares(E7, E5)]);
+        let info = UciOutgoing::Info(result(Score::from_centipawns(-35), 50), &pv);
         assert_eq!(info.to_string(), "info depth 3 seldepth 7 score cp -35 nodes 5000 nps 100000 time 50 pv e2e4 e7e5");
     }
 
     #[test]
     fn info_mate_without_pv_and_zero_time() {
-        let info = UciOutgoing::Info(result(Score::from_mate_in(-4), &[], 0));
+        let pv = variation(&[]);
+        let info = UciOutgoing::Info(result(Score::from_mate_in(-4), 0), &pv);
         assert_eq!(info.to_string(), "info depth 3 seldepth 7 score mate -2 nodes 5000 nps 5000000000 time 0");
     }
 
