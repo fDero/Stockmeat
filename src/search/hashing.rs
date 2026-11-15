@@ -22,12 +22,12 @@ impl PositionHash {
         let mut encoded_metadata : u64 = 0;
         let en_passant_square = game.en_passant_square.unwrap_or(Square::A1);
         encoded_metadata |= ((game.current_turn == Color::Black) as u64) << 0;
-        encoded_metadata |= (game.castling_rights.white_short   as u64)  << 1;
-        encoded_metadata |= (game.castling_rights.white_long    as u64)  << 2;
-        encoded_metadata |= (game.castling_rights.black_short   as u64)  << 3;
-        encoded_metadata |= (game.castling_rights.black_long    as u64)  << 4;
-        encoded_metadata |= (en_passant_square.file()           as u64)  << 5;
-        encoded_metadata |= (game.en_passant_square.is_some()   as u64)  << 8;
+        encoded_metadata |= (game.castling_rights.white_short    as u64) << 1;
+        encoded_metadata |= (game.castling_rights.white_long     as u64) << 2;
+        encoded_metadata |= (game.castling_rights.black_short    as u64) << 3;
+        encoded_metadata |= (game.castling_rights.black_long     as u64) << 4;
+        encoded_metadata |= (en_passant_square.file()            as u64) << 5;
+        encoded_metadata |= (game.en_passant_square.is_some()    as u64) << 8;
         let words = [
             colors[Color::White as usize], colors[Color::Black as usize],
             both(WBishop, BBishop), both(WRook, BRook), both(WQueen, BQueen),
