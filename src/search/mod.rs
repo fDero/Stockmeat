@@ -11,6 +11,7 @@ mod hashing;
 mod status;
 mod history;
 mod variation;
+mod negamax;
 
 pub use hashing::PositionHash;
 pub use approx::ApproxScore;
@@ -18,3 +19,6 @@ pub use result::SearchResult;
 pub use status::GameStatus;
 pub use history::History;
 pub use variation::PrincipalVariation;
+pub use ttable::TranspositionTable;
+pub use negamax::SearchSettings;
+pub use negamax::Negamax;

@@ -4,6 +4,7 @@
 |               LICENSE: MIT (https://mit-license.org)                 |
 +---------------------------------------------------------------------*/
 
+use crate::search::SearchSettings;
 use anyhow::{Context, Result};
 use anyhow::{bail, ensure};
 use std::time::Duration;
@@ -16,21 +17,6 @@ use crate::model::*;
 pub enum UciIncoming {
     Uci, IsReady, UciNewGame, PonderHit, Stop,
     Position(Game), Go(SearchSettings), Quit,
-}
-
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
-pub struct SearchSettings {
-    pub searchmoves: Vec<Move>,
-    pub ponder: bool,
-    pub wtime: Option<Duration>,
-    pub btime: Option<Duration>,
-    pub winc: Option<Duration>,
-    pub binc: Option<Duration>,
-    pub movestogo: Option<u64>,
-    pub depth: Option<u64>,
-    pub nodes: Option<u64>,
-    pub movetime: Option<Duration>,
-    pub infinite: bool,
 }
 
 pub trait UciDecode: Sized {

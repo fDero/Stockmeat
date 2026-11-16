@@ -38,6 +38,15 @@ impl SearchResult {
         SearchResult::new(chrono.elapsed(), exact, 0, 0, 1)
     }
 
+    pub fn lift(self) -> SearchResult {
+        SearchResult {
+            updated_score: (-self.updated_score).bubble_up(),
+            minimum_depth: self.minimum_depth + 1,
+            maximum_depth: self.maximum_depth + 1,
+            ..self
+        }
+    }
+
     pub fn merge(self, sibling: SearchResult) -> SearchResult {
         let current_raw_score = self.updated_score.score();
         let sibling_raw_score = sibling.updated_score.score();

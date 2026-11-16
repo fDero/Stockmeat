@@ -23,7 +23,7 @@ impl Game {
         let in_check = self.board.is_in_check(self.current_turn);
         let enemy = self.current_turn.opposite();
         let count = history.count(self);
-        let marked = history.latest() == Some(*self);
+        let marked = history.latest() == *self;
         match () {
             _ if !in_check && moves.is_empty()      => GameStatus::Stalemate,
             _ if in_check && moves.is_empty()       => GameStatus::Checkmate(enemy),

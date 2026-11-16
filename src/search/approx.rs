@@ -4,6 +4,7 @@
 |               LICENSE: MIT (https://mit-license.org)                 |
 +---------------------------------------------------------------------*/
 
+use std::ops::Neg;
 use crate::scores::Score;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -38,6 +39,26 @@ impl ApproxScore {
             (None, None)                           => unreachable!("one of the bounds is always finite"),
         }
     }
+
+    pub fn bubble_up(self) -> ApproxScore {
+        match self {
+            ApproxScore::Exact(score)       => ApproxScore::Exact(score.bubble_up()),
+            ApproxScore::LessThan(score)    => ApproxScore::LessThan(score.bubble_up()),
+            ApproxScore::GreaterThan(score) => ApproxScore::GreaterThan(score.bubble_up()),
+        }
+    }
+}
+
+impl Neg for ApproxScore {
+    type Output = ApproxScore;
+
+    fn neg(self) -> ApproxScore {
+        match self {
+            ApproxScore::Exact(score)       => ApproxScore::Exact(-score),
+            ApproxScore::LessThan(score)    => ApproxScore::GreaterThan(-score),
+            ApproxScore::GreaterThan(score) => ApproxScore::LessThan(-score),
+        }
+    }
 }
 
 /*---------------------------------------------------------------------+
@@ -70,5 +91,28 @@ mod tests {
     #[test]
     fn unrepresentable_range_is_widened_to_its_upper_bound() {
         assert_eq!(Exact(cp(5)).max(LessThan(cp(10))), LessThan(cp(10)));
+    }
+
+    #[test]
+    fn negation_flips_the_bound() {
+        assert_eq!(-Exact(cp(35)), Exact(cp(-35)));
+        assert_eq!(-LessThan(cp(35)), GreaterThan(cp(-35)));
+        assert_eq!(-GreaterThan(cp(35)), LessThan(cp(-35)));
+        assert_eq!(-(-LessThan(cp(35))), LessThan(cp(35)));
+    }
+
+    #[test]
+    fn bubble_up_keeps_the_bound() {
+        let mate = Score::from_mate_in_plies(3);
+        assert_eq!(Exact(mate).bubble_up(), Exact(mate.bubble_up()));
+        assert_eq!(LessThan(mate).bubble_up(), LessThan(mate.bubble_up()));
+        assert_eq!(GreaterThan(mate).bubble_up(), GreaterThan(mate.bubble_up()));
+        assert_eq!(GreaterThan(cp(35)).bubble_up(), GreaterThan(cp(35)));
+    }
+
+    #[test]
+    fn child_mate_becomes_parent_mate_one_ply_later() {
+        let mated_now = Exact(Score::from_mate_in_plies(0));
+        assert_eq!((-mated_now).bubble_up(), Exact(Score::from_mate_in_plies(1)));
     }
 }

@@ -11,10 +11,11 @@ use crate::search::ApproxScore::{Exact, GreaterThan, LessThan};
 use crate::model::*;
 
 #[derive(Clone, Debug)]
-pub enum UciOutgoing<'a> {
+pub enum UciOutgoing {
     Identify, UciOk, ReadyOk,
     BestMove(MoveList<2>),
-    Info(SearchResult, &'a PrincipalVariation),
+    Info(SearchResult),
+    Pv(PrincipalVariation)
 }
 
 impl Display for Score {
@@ -60,17 +61,15 @@ impl Display for SearchResult {
     }
 }
 
-impl Display for UciOutgoing<'_> {
+impl Display for UciOutgoing {
     fn fmt(&self, formatter: &mut Formatter<'_>) -> Result {
         let identity = "id name Stockmeat\nid author fDero";
         match self {
             UciOutgoing::UciOk => write!(formatter, "uciok"),
             UciOutgoing::ReadyOk => write!(formatter, "readyok"),
             UciOutgoing::Identify => write!(formatter, "{}", identity),
-            UciOutgoing::Info(result, pv) => match pv.principal().is_empty() {
-                true  => write!(formatter, "{result}"),
-                false => write!(formatter, "{result} pv {pv}"),
-            },
+            UciOutgoing::Info(result) => write!(formatter, "{result}"),
+            UciOutgoing::Pv(pv) => write!(formatter, "info pv {pv}"),
             UciOutgoing::BestMove(list) => match list.len() {
                 0 => write!(formatter, "bestmove 0000"),
                 1 => write!(formatter, "bestmove {}", list[0]),
@@ -122,16 +121,8 @@ mod tests {
     }
 
     #[test]
-    fn info_with_pv() {
-        let pv = variation(&[Move::from_squares(E2, E4), Move::from_squares(E7, E5)]);
-        let info = UciOutgoing::Info(result(Score::from_centipawns(-35), 50), &pv);
-        assert_eq!(info.to_string(), "info depth 3 seldepth 7 score cp -35 nodes 5000 nps 100000 time 50 pv e2e4 e7e5");
-    }
-
-    #[test]
     fn info_mate_without_pv_and_zero_time() {
-        let pv = variation(&[]);
-        let info = UciOutgoing::Info(result(Score::from_mate_in_plies(-4), 0), &pv);
+        let info = UciOutgoing::Info(result(Score::from_mate_in_plies(-4), 0));
         assert_eq!(info.to_string(), "info depth 3 seldepth 7 score mate -2 nodes 5000 nps 5000000000 time 0");
     }
 

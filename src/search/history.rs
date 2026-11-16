@@ -26,7 +26,7 @@ struct PositionKey {
 
 impl History {
     pub fn play(&mut self, mov: Move) {
-        let game = self.latest().unwrap_or(self.starting_pos).apply_unchecked(mov);
+        let game = self.latest().apply_unchecked(mov);
         *self.reps.entry(PositionKey::from(&game)).or_insert(0) += 1;
         self.snapshots.push((mov, game));
     }
@@ -41,9 +41,11 @@ impl History {
         Some(game)
     }
 
-    pub fn latest(&self) -> Option<Game> {
-        let pair = self.snapshots.last()?;
-        return Some(pair.1);
+    pub fn latest(&self) -> Game {
+        match self.snapshots.last() {
+            Some((_, game)) => *game,
+            _ => self.starting_pos,
+        }
     }
 
     pub fn count(&self, game: &Game) -> u8 {
@@ -94,7 +96,7 @@ mod tests {
     fn new_history_is_empty() {
         let mut history = History::default();
         assert_eq!(history.count(&Game::default()), 0);
-        assert_eq!(history.latest(), None);
+        assert_eq!(history.latest(), Game::default());
         assert!(history.takeback().is_none());
     }
 
@@ -104,12 +106,12 @@ mod tests {
         let e4 = Game::default().apply_unchecked(Move::from_squares(E2, E4));
         let e5 = e4.apply_unchecked(Move::from_squares(E7, E5));
         play(&mut history, &[(E2, E4), (E7, E5)]);
-        assert_eq!(history.latest(), Some(e5));
+        assert_eq!(history.latest(), e5);
         assert_eq!(history.count(&e5), 1);
         assert_eq!(history.takeback(), Some(e5));
-        assert_eq!(history.latest(), Some(e4));
+        assert_eq!(history.latest(), e4);
         assert_eq!(history.takeback(), Some(e4));
-        assert_eq!(history.latest(), None);
+        assert_eq!(history.latest(), Game::default());
         assert!(history.takeback().is_none());
         assert!(history.reps.is_empty());
     }

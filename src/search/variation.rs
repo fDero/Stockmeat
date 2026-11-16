@@ -7,6 +7,7 @@
 use std::fmt::{Debug, Formatter, Result};
 use crate::model::Move;
 
+#[derive(Clone)]
 pub struct PrincipalVariation<const N: usize = 300> {
     moves:   [[Move; N]; N],
     lengths: [usize; N],
